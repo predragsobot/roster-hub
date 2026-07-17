@@ -128,6 +128,44 @@
   .modal-body{padding:20px;}
   .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
 
+  .pitch-wrap{max-width:460px;margin:0 auto 20px;}
+  .pitch{position:relative;width:100%;aspect-ratio:68/104;border-radius:12px;overflow:hidden;
+    border:2px solid rgba(255,255,255,.25);
+    background:repeating-linear-gradient(to bottom,#1d5c34 0 12.5%,#1a5430 12.5% 25%);}
+  .pitch-halfway{position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(255,255,255,.35);}
+  .pitch-circle{position:absolute;left:50%;top:50%;width:28%;aspect-ratio:1;border:2px solid rgba(255,255,255,.35);
+    border-radius:50%;transform:translate(-50%,-50%);}
+  .pitch-spot{position:absolute;left:50%;top:50%;width:5px;height:5px;background:rgba(255,255,255,.5);
+    border-radius:50%;transform:translate(-50%,-50%);}
+  .pitch-box{position:absolute;left:20%;width:60%;height:15%;border:2px solid rgba(255,255,255,.35);}
+  .pitch-box-top{top:0;border-top:none;}
+  .pitch-box-bottom{bottom:0;border-bottom:none;}
+  .pitch-box-small{position:absolute;left:35%;width:30%;height:6%;border:2px solid rgba(255,255,255,.35);}
+  .pitch-box-small-top{top:0;border-top:none;}
+  .pitch-box-small-bottom{bottom:0;border-bottom:none;}
+
+  .slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
+    align-items:center;gap:2px;cursor:pointer;}
+  .slot-empty{width:34px;height:34px;border-radius:50%;border:2px dashed rgba(255,255,255,.4);
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;
+    color:rgba(255,255,255,.55);background:rgba(255,255,255,.04);}
+  .pitch-chip{width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--brand);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:grab;position:relative;}
+  .pitch-chip.selected{box-shadow:0 0 0 3px rgba(255,255,255,.5);}
+  .pitch-chip img{width:100%;height:100%;object-fit:cover;}
+  .pitch-chip .chip-num{font-size:12px;font-weight:800;color:#fff;}
+  .pitch-chip-label{font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);
+    padding:1px 6px;border-radius:5px;white-space:nowrap;max-width:76px;overflow:hidden;text-overflow:ellipsis;}
+
+  .bench-row{display:flex;gap:12px;flex-wrap:wrap;padding:6px 2px;min-height:60px;}
+  .bench-chip{display:flex;flex-direction:column;align-items:center;gap:5px;width:60px;cursor:grab;}
+  .bench-chip .avatar{width:42px;height:42px;border-radius:50%;background:var(--surface-2);border:2px solid var(--border);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;font-weight:700;color:var(--muted);}
+  .bench-chip.selected .avatar{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);}
+  .bench-chip .avatar img{width:100%;height:100%;object-fit:cover;}
+  .bench-chip .bname{font-size:10px;color:var(--muted);text-align:center;max-width:60px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
   .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
   .toolbar-spacer{flex:1;}
   .search-input{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13.5px;
@@ -232,11 +270,38 @@
     </div>
 
     <div class="view" id="view-lineBuilder">
-      <div class="empty-state">
-        <div class="icon">🧩</div>
-        <h3>Line Builder</h3>
-        <p>Drag-and-drop pitch with selectable formations, free positioning, player display modes, substitutes bench and staff list.</p>
-        <span class="milestone-tag">Arrives in Milestone 3</span>
+      <div class="toolbar">
+        <select class="select" id="formationSelect"></select>
+        <select class="select" id="displayModeSelect">
+          <option value="photo">Photo only</option>
+          <option value="number">Number only</option>
+          <option value="name">Name only</option>
+          <option value="photo_number">Photo + Number</option>
+          <option value="photo_name">Photo + Name</option>
+          <option value="number_name">Number + Name</option>
+          <option value="photo_number_name">Photo + Number + Name</option>
+        </select>
+      </div>
+
+      <div class="pitch-wrap">
+        <div class="pitch" id="pitch"></div>
+      </div>
+
+      <div class="card">
+        <h2>Substitutes</h2>
+        <p class="sub">Drag a player onto the pitch, or tap a player then tap a pitch slot.</p>
+        <div class="bench-row" id="benchRow"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h2 style="margin-bottom:2px;">Staff</h2>
+            <p class="sub" style="margin-bottom:0;">Coaching and support staff.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="addStaffBtn" style="display:none;">+ Add staff</button>
+        </div>
+        <div id="staffList" style="margin-top:14px;"></div>
       </div>
     </div>
 
@@ -368,6 +433,29 @@
   </div>
 </div>
 
+<!-- STAFF MODAL -->
+<div class="modal-overlay" id="staffModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="staffModalTitle">Add staff</h3><button class="modal-close" data-close="staffModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input type="text" id="sName"></div>
+      <div class="field"><label>Role</label><input type="text" id="sRole" list="staffRoles" placeholder="e.g. Head Coach"></div>
+      <datalist id="staffRoles">
+        <option value="Head Coach"><option value="Assistant Coach"><option value="Goalkeeper Coach">
+        <option value="Fitness Coach"><option value="Physiotherapist"><option value="Team Manager"><option value="Doctor">
+      </datalist>
+      <div class="form-error" id="staffError" style="display:none;"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between;">
+      <button class="btn btn-danger btn-sm" id="deleteStaffBtn" style="display:none;">Delete</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost btn-sm" data-close="staffModal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="saveStaffBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -387,6 +475,21 @@ const CLUB_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 // so a player's primary position lines up with pitch roles later.
 const POSITIONS = ['GK','LB','CB','RB','LWB','RWB','DM','CM','AM','LM','RM','LW','RW','ST'];
 
+// Single working lineup (like club_settings, a singleton row) — keeps
+// Milestone 3 focused on one auto-saved tactical board rather than a full
+// multi-lineup manager.
+const CURRENT_LINEUP_ID = '00000000-0000-0000-0000-000000000002';
+
+const PITCH_MARKINGS = `
+  <div class="pitch-halfway"></div>
+  <div class="pitch-circle"></div>
+  <div class="pitch-spot"></div>
+  <div class="pitch-box pitch-box-top"></div>
+  <div class="pitch-box-small pitch-box-small-top"></div>
+  <div class="pitch-box pitch-box-bottom"></div>
+  <div class="pitch-box-small pitch-box-small-bottom"></div>
+`;
+
 /* ======================================================================
    2) STATE
    ====================================================================== */
@@ -403,6 +506,15 @@ let state = {
   editingPlayerId: null,
   pendingPhotoFile: null,
   existingPhotoUrl: null,
+  formations: [],
+  lineup: null,
+  lineupPlayers: [],
+  staff: [],
+  editingStaffId: null,
+  selectedPlayerId: null,
+  selectedSource: null,
+  dragPlayerId: null,
+  dragSource: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -454,12 +566,17 @@ async function init(){
     renderAuthZone();
     renderSettings();
     renderPlayers();
+    renderPitch();
+    renderBench();
+    renderStaff();
   });
 
   renderAuthZone();
   loadClubSettings();
   loadMembers();
   loadPlayers();
+  loadFormations().then(loadLineup).then(loadLineupPlayers);
+  loadStaff();
 
   // Realtime: keep every connected user in sync, no refresh needed.
   sb.channel('realtime:club_settings')
@@ -473,6 +590,18 @@ async function init(){
     .subscribe();
   sb.channel('realtime:players')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadPlayers)
+    .subscribe();
+  sb.channel('realtime:formations')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'formations' }, loadFormations)
+    .subscribe();
+  sb.channel('realtime:lineups')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineups' }, loadLineup)
+    .subscribe();
+  sb.channel('realtime:lineup_players')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineup_players' }, loadLineupPlayers)
+    .subscribe();
+  sb.channel('realtime:staff')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, loadStaff)
     .subscribe();
 }
 
@@ -524,6 +653,25 @@ function bindStaticEvents(){
   const posSecondary = $('#pPosSecondary');
   posPrimary.innerHTML = POSITIONS.map(p => `<option value="${p}">${p}</option>`).join('');
   posSecondary.innerHTML = '<option value="">—</option>' + POSITIONS.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  $('#formationSelect').addEventListener('change', onFormationChange);
+  $('#displayModeSelect').addEventListener('change', onDisplayModeChange);
+
+  $('#pitch').addEventListener('dragover', (e) => e.preventDefault());
+  $('#pitch').addEventListener('drop', (e) => {
+    e.preventDefault();
+    const slotEl = e.target.closest('.slot');
+    if(slotEl) handleDrop(slotEl.dataset.slot);
+  });
+  $('#benchRow').addEventListener('dragover', (e) => e.preventDefault());
+  $('#benchRow').addEventListener('drop', (e) => {
+    e.preventDefault();
+    handleDrop(null);
+  });
+
+  $('#addStaffBtn').addEventListener('click', () => openStaffModal(null));
+  $('#saveStaffBtn').addEventListener('click', saveStaff);
+  $('#deleteStaffBtn').addEventListener('click', deleteStaff);
 }
 
 function switchTab(tab){
@@ -720,6 +868,7 @@ async function loadPlayers(){
   if(error){ console.error(error); return; }
   state.players = data || [];
   renderPlayers();
+  renderBench();
 }
 
 function filteredSortedPlayers(){
@@ -897,7 +1046,319 @@ async function deletePlayer(){
 }
 
 /* ======================================================================
-   9) UTIL
+   9) LINE BUILDER
+   ====================================================================== */
+async function loadFormations(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('formations').select('*').order('name');
+  if(error){ console.error(error); return; }
+  state.formations = data || [];
+  $('#formationSelect').innerHTML = state.formations.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  if(state.lineup) $('#formationSelect').value = state.lineup.formation_id;
+  renderPitch();
+}
+
+async function loadLineup(){
+  if(!isConfigured) return;
+  let { data, error } = await sb.from('lineups').select('*').eq('id', CURRENT_LINEUP_ID).maybeSingle();
+  if(error){ console.error(error); return; }
+
+  if(!data){
+    const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
+    const inserted = await sb.from('lineups')
+      .upsert({ id: CURRENT_LINEUP_ID, name: 'Current lineup', formation_id: defaultFormation, display_mode: 'photo_number_name' })
+      .select().single();
+    data = inserted.data;
+  }
+
+  state.lineup = data;
+  if(data){
+    $('#formationSelect').value = data.formation_id;
+    $('#displayModeSelect').value = data.display_mode;
+  }
+  renderPitch();
+}
+
+async function loadLineupPlayers(){
+  if(!isConfigured || !state.lineup) return;
+  const { data, error } = await sb.from('lineup_players').select('*').eq('lineup_id', CURRENT_LINEUP_ID);
+  if(error){ console.error(error); return; }
+  state.lineupPlayers = data || [];
+  renderPitch();
+  renderBench();
+}
+
+function currentFormation(){
+  return state.formations.find(f => f.id === state.lineup?.formation_id);
+}
+
+function chipInner(player, mode){
+  const fields = mode.split('_'); // e.g. "photo_number_name" -> ['photo','number','name']
+  const showPhoto = fields.includes('photo');
+  const showNumber = fields.includes('number');
+  const showName = fields.includes('name');
+
+  let circle;
+  if(showPhoto && player.photo_url) circle = `<img src="${player.photo_url}" alt="">`;
+  else if(showNumber) circle = `<span class="chip-num">${player.shirt_number ?? ''}</span>`;
+  else if(showPhoto) circle = `<span class="chip-num">${(player.last_name || '?')[0]}</span>`;
+  else circle = `<span class="chip-num">${(player.last_name || '?')[0]}</span>`;
+
+  let label = '';
+  if(showName || (showNumber && showPhoto)){
+    const bits = [];
+    if(showNumber && showPhoto) bits.push(player.shirt_number ?? '');
+    if(showName) bits.push(player.last_name);
+    label = `<div class="pitch-chip-label">${escapeHtml(bits.filter(Boolean).join(' · '))}</div>`;
+  }
+  return { circle, label };
+}
+
+function renderPitch(){
+  const pitch = $('#pitch');
+  const formation = currentFormation();
+  if(!formation){ pitch.innerHTML = ''; return; }
+
+  const mode = state.lineup?.display_mode || 'photo_number_name';
+  const editable = isEditor();
+  const bySlot = {};
+  state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
+
+  const slotsHtml = formation.slots.map(slot => {
+    const lp = bySlot[slot.id];
+    const player = lp ? state.players.find(p => p.id === lp.player_id) : null;
+
+    if(player){
+      const { circle, label } = chipInner(player, mode);
+      const selected = state.selectedPlayerId === player.id;
+      return `<div class="slot" style="left:${slot.x}%;top:${slot.y}%;" data-slot="${slot.id}">
+        <div class="pitch-chip${selected ? ' selected' : ''}" draggable="${editable}" data-player="${player.id}" data-source="slot:${slot.id}">${circle}</div>
+        ${label}
+      </div>`;
+    }
+    return `<div class="slot" style="left:${slot.x}%;top:${slot.y}%;" data-slot="${slot.id}">
+      <div class="slot-empty">${slot.role}</div>
+    </div>`;
+  }).join('');
+
+  pitch.innerHTML = PITCH_MARKINGS + slotsHtml;
+
+  $$('#pitch .slot').forEach(slotEl => {
+    slotEl.addEventListener('click', () => handleSlotClick(slotEl.dataset.slot));
+  });
+  if(editable){
+    $$('#pitch .pitch-chip').forEach(chipEl => {
+      chipEl.addEventListener('dragstart', () => {
+        state.dragPlayerId = chipEl.dataset.player;
+        state.dragSource = chipEl.dataset.source;
+      });
+    });
+  }
+}
+
+function renderBench(){
+  const editable = isEditor();
+  const onPitchIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
+  const benchPlayers = state.players.filter(p => !onPitchIds.has(p.id));
+  const row = $('#benchRow');
+
+  if(!state.players.length){
+    row.innerHTML = '<p class="hint">No players yet — add players in the Players tab first.</p>';
+    return;
+  }
+  if(!benchPlayers.length){
+    row.innerHTML = '<p class="hint">Everyone is on the pitch.</p>';
+    return;
+  }
+
+  row.innerHTML = benchPlayers.map(p => `
+    <div class="bench-chip${state.selectedPlayerId === p.id ? ' selected' : ''}" draggable="${editable}" data-player="${p.id}">
+      <div class="avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : (p.shirt_number ?? '👤')}</div>
+      <div class="bname">${escapeHtml(p.last_name)}</div>
+    </div>
+  `).join('');
+
+  if(editable){
+    $$('#benchRow .bench-chip').forEach(chipEl => {
+      chipEl.addEventListener('click', () => handleBenchClick(chipEl.dataset.player));
+      chipEl.addEventListener('dragstart', () => {
+        state.dragPlayerId = chipEl.dataset.player;
+        state.dragSource = 'bench';
+      });
+    });
+  }
+}
+
+function handleSlotClick(slotId){
+  if(!isEditor()) return;
+
+  if(state.selectedPlayerId){
+    assignOrMove(state.selectedPlayerId, state.selectedSource, slotId);
+    state.selectedPlayerId = null;
+    state.selectedSource = null;
+    return;
+  }
+
+  const lp = state.lineupPlayers.find(x => x.slot_id === slotId);
+  if(lp){
+    state.selectedPlayerId = lp.player_id;
+    state.selectedSource = 'slot:' + slotId;
+    renderPitch();
+    renderBench();
+  }
+}
+
+function handleBenchClick(playerId){
+  if(!isEditor()) return;
+  if(state.selectedPlayerId === playerId){
+    state.selectedPlayerId = null;
+    state.selectedSource = null;
+  }else{
+    state.selectedPlayerId = playerId;
+    state.selectedSource = 'bench';
+  }
+  renderPitch();
+  renderBench();
+}
+
+function handleDrop(targetSlotId){
+  if(!isEditor() || !state.dragPlayerId) return;
+  assignOrMove(state.dragPlayerId, state.dragSource, targetSlotId);
+  state.dragPlayerId = null;
+  state.dragSource = null;
+}
+
+async function assignOrMove(playerId, source, targetSlotId){
+  const existingRow = state.lineupPlayers.find(x => x.player_id === playerId);
+
+  if(targetSlotId === null){
+    if(existingRow) await sb.from('lineup_players').delete().eq('id', existingRow.id);
+    await loadLineupPlayers();
+    return;
+  }
+
+  const occupant = state.lineupPlayers.find(x => x.slot_id === targetSlotId && x.player_id !== playerId);
+  if(occupant){
+    if(source && source.startsWith('slot:')){
+      const sourceSlotId = source.split(':')[1];
+      await sb.from('lineup_players').update({ slot_id: sourceSlotId }).eq('id', occupant.id);
+    }else{
+      await sb.from('lineup_players').delete().eq('id', occupant.id);
+    }
+  }
+
+  if(existingRow){
+    await sb.from('lineup_players').update({ slot_id: targetSlotId, is_starting: true }).eq('id', existingRow.id);
+  }else{
+    await sb.from('lineup_players').insert({ lineup_id: CURRENT_LINEUP_ID, player_id: playerId, slot_id: targetSlotId, is_starting: true });
+  }
+
+  await loadLineupPlayers();
+}
+
+async function onFormationChange(e){
+  const formationId = e.target.value;
+  await sb.from('lineups').update({ formation_id: formationId }).eq('id', CURRENT_LINEUP_ID);
+
+  const formation = state.formations.find(f => f.id === formationId);
+  const validSlotIds = new Set((formation?.slots || []).map(s => s.id));
+  const invalid = state.lineupPlayers.filter(lp => lp.slot_id && !validSlotIds.has(lp.slot_id));
+  for(const lp of invalid){
+    await sb.from('lineup_players').delete().eq('id', lp.id);
+  }
+
+  await loadLineup();
+  await loadLineupPlayers();
+  toast('Formation changed');
+}
+
+async function onDisplayModeChange(e){
+  await sb.from('lineups').update({ display_mode: e.target.value }).eq('id', CURRENT_LINEUP_ID);
+}
+
+/* ======================================================================
+   10) STAFF
+   ====================================================================== */
+async function loadStaff(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('staff').select('*').order('created_at', { ascending: true });
+  if(error){ console.error(error); return; }
+  state.staff = data || [];
+  renderStaff();
+}
+
+function renderStaff(){
+  const editable = isEditor();
+  $('#addStaffBtn').style.display = editable ? 'inline-flex' : 'none';
+
+  const list = $('#staffList');
+  if(!state.staff.length){
+    list.innerHTML = '<p class="hint">No staff added yet.</p>';
+    return;
+  }
+
+  list.innerHTML = state.staff.map(s => `
+    <div class="member-row">
+      <div>
+        <div class="member-name">${escapeHtml(s.name)}</div>
+        <div class="member-role">${escapeHtml(s.role)}</div>
+      </div>
+      ${editable ? `<button class="btn btn-ghost btn-sm" data-edit-staff="${s.id}">Edit</button>` : ''}
+    </div>
+  `).join('');
+
+  if(editable){
+    $$('[data-edit-staff]').forEach(btn => {
+      btn.addEventListener('click', () => openStaffModal(state.staff.find(s => s.id === btn.dataset.editStaff)));
+    });
+  }
+}
+
+function openStaffModal(staffMember){
+  state.editingStaffId = staffMember ? staffMember.id : null;
+  $('#staffModalTitle').textContent = staffMember ? 'Edit staff' : 'Add staff';
+  $('#sName').value = staffMember?.name || '';
+  $('#sRole').value = staffMember?.role || '';
+  $('#deleteStaffBtn').style.display = staffMember ? 'inline-flex' : 'none';
+  $('#staffError').style.display = 'none';
+  openModal('staffModal');
+}
+
+async function saveStaff(){
+  const errEl = $('#staffError');
+  errEl.style.display = 'none';
+  const name = $('#sName').value.trim();
+  const role = $('#sRole').value.trim();
+  if(!name || !role){
+    errEl.textContent = 'Name and role are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const { error } = state.editingStaffId
+    ? await sb.from('staff').update({ name, role }).eq('id', state.editingStaffId)
+    : await sb.from('staff').insert({ name, role });
+
+  if(error){
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('staffModal');
+  toast(state.editingStaffId ? 'Staff updated' : 'Staff added');
+}
+
+async function deleteStaff(){
+  if(!state.editingStaffId) return;
+  if(!confirm('Delete this staff member?')) return;
+  const { error } = await sb.from('staff').delete().eq('id', state.editingStaffId);
+  if(error){ toast(error.message, true); return; }
+  closeModal('staffModal');
+  toast('Staff deleted');
+}
+
+/* ======================================================================
+   11) UTIL
    ====================================================================== */
 function escapeHtml(str){
   const div = document.createElement('div');
