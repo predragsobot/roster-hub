@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Team Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ===================== DESIGN TOKENS ===================== */
+  :root{
+    --bg:#0b0d12;
+    --surface:#12151c;
+    --surface-2:#171b24;
+    --border:#262b36;
+    --ink:#e7eaf0;
+    --muted:#8a93a6;
+    --brand:#22a869;
+    --brand-dark:#178754;
+    --brand-soft:rgba(34,168,105,.14);
+    --danger:#e0554f;
+    --danger-soft:rgba(224,85,79,.12);
+    --radius-lg:16px;
+    --radius-md:11px;
+    --radius-sm:8px;
+    --shadow-pop:0 20px 60px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif;letter-spacing:.02em;}
+  button{font-family:inherit;cursor:pointer;}
+  a{color:inherit;}
+  ::selection{background:var(--brand);color:#fff;}
+
+  .app-shell{min-height:100vh;display:flex;flex-direction:column;}
+
+  header.topbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
+  .topbar-inner{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .brand-text{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:.03em;}
+  .topbar-spacer{flex:1;}
+
+  .pill-status{font-size:11.5px;padding:5px 10px;border-radius:100px;background:var(--surface-2);
+    border:1px solid var(--border);display:flex;align-items:center;gap:6px;color:var(--muted);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .dot.on{background:#3fd17a;box-shadow:0 0 0 3px rgba(63,209,122,.18);}
+  .dot.err{background:var(--danger);}
+
+  .btn{border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:filter .12s ease,transform .1s ease;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--border);}
+  .btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(224,85,79,.35);}
+  .btn-danger:hover{background:rgba(224,85,79,.22);}
+  .btn-sm{padding:6px 11px;font-size:12px;border-radius:7px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:100px;padding:5px 6px 5px 12px;font-size:12.5px;}
+  .role-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:100px;}
+  .role-badge.editor{background:var(--brand-soft);color:var(--brand);}
+  .role-badge.viewer{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+
+  nav.tabs{background:var(--surface);border-top:1px solid var(--border);}
+  .tabs-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto;}
+  .tab-btn{background:none;border:none;color:var(--muted);padding:12px 16px;font-size:13px;font-weight:600;
+    font-family:'Oswald',sans-serif;letter-spacing:.03em;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--brand);}
+  .tab-btn:hover{color:var(--ink);}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 20px;width:100%;flex:1;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;}
+  .card + .card{margin-top:16px;}
+  .card h2{margin:0 0 4px;font-size:14px;letter-spacing:.03em;}
+  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;}
+
+  .empty-state{text-align:center;padding:64px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);}
+  .empty-state .icon{width:48px;height:48px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;}
+  .empty-state h3{margin:0 0 8px;font-size:16px;}
+  .empty-state p{color:var(--muted);font-size:13px;max-width:420px;margin:0 auto;line-height:1.5;}
+  .milestone-tag{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;color:var(--brand);
+    background:var(--brand-soft);border:1px solid rgba(34,168,105,.35);border-radius:100px;padding:5px 12px;}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .field input{border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;
+    font-family:inherit;background:var(--surface-2);color:var(--ink);}
+  .field input:focus{outline:2px solid var(--brand);outline-offset:-1px;}
+  .field input:disabled{opacity:.6;}
+  .hint{font-size:11.5px;color:var(--muted);line-height:1.5;}
+
+  .logo-row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;}
+  .logo-preview{width:76px;height:76px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:26px;}
+  .logo-preview img{width:100%;height:100%;object-fit:contain;}
+  .file-btn{display:inline-flex;align-items:center;gap:7px;font-size:12px;}
+  .file-btn input[type=file]{display:none;}
+
+  .member-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+  .member-row:last-child{border-bottom:none;}
+  .member-name{font-size:13.5px;font-weight:600;}
+  .member-role{font-size:11.5px;color:var(--muted);text-transform:capitalize;margin-top:2px;}
+
+  .spinner{width:20px;height:20px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--brand);
+    animation:spin .7s linear infinite;}
+  .spinner.center{margin:40px auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(6,8,12,.65);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow-y:auto;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:400px;
+    box-shadow:var(--shadow-pop);animation:pop .16s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
+  .modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-head h3{margin:0;font-size:16px;}
+  .modal-close{background:none;border:none;font-size:20px;color:var(--muted);line-height:1;padding:4px;}
+  .modal-body{padding:20px;}
+  .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+  .mode-switch{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;margin-bottom:16px;}
+  .mode-switch button{flex:1;background:none;border:none;border-radius:7px;padding:8px;font-size:12.5px;font-weight:600;color:var(--muted);}
+  .mode-switch button.active{background:var(--brand);color:#fff;}
+
+  .form-error{font-size:12px;color:var(--danger);background:var(--danger-soft);border:1px solid rgba(224,85,79,.3);
+    border-radius:8px;padding:9px 11px;margin-top:4px;}
+  .form-info{font-size:12px;color:var(--brand);background:var(--brand-soft);border:1px solid rgba(34,168,105,.3);
+    border-radius:8px;padding:9px 11px;margin-top:4px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--ink);
+    border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow-pop);
+    z-index:200;display:none;max-width:90vw;}
+  .toast.show{display:block;}
+  .toast.error{border-color:rgba(224,85,79,.5);color:#ffb3af;}
+
+  footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
+
+  @media(max-width:640px){
+    .brand-text{display:none;}
+    .modal{max-width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">⚽</div>
+        <div class="brand-text">TEAM MANAGER</div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <span class="pill-status"><span class="dot" id="connDot"></span><span id="connLabel">Connecting…</span></span>
+      <div id="authZone"></div>
+    </div>
+    <nav class="tabs">
+      <div class="tabs-inner">
+        <button class="tab-btn active" data-tab="players">Players</button>
+        <button class="tab-btn" data-tab="lineBuilder">Line Builder</button>
+        <button class="tab-btn" data-tab="matchSquad">Match Squad</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="view active" id="view-players">
+      <div class="empty-state">
+        <div class="icon">👥</div>
+        <h3>Players</h3>
+        <p>Full roster: photos, shirt numbers, positions, height/weight, preferred foot, search and sort — stored in Supabase with Storage for photos.</p>
+        <span class="milestone-tag">Arrives in Milestone 2</span>
+      </div>
+    </div>
+
+    <div class="view" id="view-lineBuilder">
+      <div class="empty-state">
+        <div class="icon">🧩</div>
+        <h3>Line Builder</h3>
+        <p>Drag-and-drop pitch with selectable formations, free positioning, player display modes, substitutes bench and staff list.</p>
+        <span class="milestone-tag">Arrives in Milestone 3</span>
+      </div>
+    </div>
+
+    <div class="view" id="view-matchSquad">
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <h3>Match Squad</h3>
+        <p>Configurable squad size, selected / not-selected lists with drag and drop, plus PDF, PNG and print export.</p>
+        <span class="milestone-tag">Arrives in Milestone 4</span>
+      </div>
+    </div>
+
+    <div class="view" id="view-settings">
+      <div class="card" id="notConfiguredCard" style="display:none;">
+        <h2>Not connected to Supabase yet</h2>
+        <p class="hint">Open <code>index.html</code>, find <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> near the top of the &lt;script&gt; tag at the bottom of the file, and fill in your own values from Supabase → Project Settings → API. Then run <code>supabase/schema.sql</code> in the SQL editor.</p>
+      </div>
+
+      <div id="settingsContent" style="display:none;">
+        <div class="card">
+          <h2>Club profile</h2>
+          <p class="sub">Name and logo, used across the app and in exports later.</p>
+          <div class="logo-row">
+            <div class="logo-preview" id="logoPreview">⚽</div>
+            <div style="flex:1;min-width:220px;">
+              <div class="field">
+                <label>Club name</label>
+                <input type="text" id="clubNameInput" placeholder="e.g. Panathinaikos AC">
+              </div>
+              <label class="btn btn-ghost btn-sm file-btn" id="uploadLogoBtn">
+                <span id="uploadLogoLabel">Upload logo</span>
+                <input type="file" id="logoFileInput" accept="image/*">
+              </label>
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="saveClubBtn">Save</button>
+              </div>
+              <div class="form-error" id="clubError" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Team members</h2>
+          <p class="sub">Editors can add, edit and delete data. Viewers can only look. Promote or demote anyone here.</p>
+          <div id="membersList"><div class="spinner center"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>Football Team Manager · data stored in Supabase</footer>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="authModalTitle">Sign in</h3><button class="modal-close" data-close="authModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="mode-switch">
+        <button id="modeSignIn" class="active">Sign in</button>
+        <button id="modeSignUp">Sign up</button>
+      </div>
+      <div class="field" id="fullNameField" style="display:none;">
+        <label>Full name</label>
+        <input type="text" id="authFullName" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="authEmail" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="authPassword" autocomplete="current-password">
+      </div>
+      <p class="hint">Viewers can see everything. Editors can add, edit and delete. New accounts start as Viewer — the very first account on a fresh project becomes Editor automatically.</p>
+      <div class="form-error" id="authError" style="display:none;"></div>
+      <div class="form-info" id="authInfo" style="display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close="authModal">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="authSubmit">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   1) CONFIGURATION — fill this in with your own Supabase project details
+   Supabase Dashboard -> Project Settings -> API
+   ====================================================================== */
+const SUPABASE_URL = "https://rflgdbasrdxtjnvuhctj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_lLcJkMMyvzh2ueCYzfMAzg_xjbHbwEZ";
+
+const isConfigured = !SUPABASE_URL.includes('YOUR_SUPABASE') && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
+const sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const CLUB_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
+
+/* ======================================================================
+   2) STATE
+   ====================================================================== */
+let state = {
+  session: null,
+  profile: null,       // { id, full_name, role }
+  activeTab: 'players',
+  authMode: 'sign-in',
+  members: [],
+  club: null,
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const isEditor = () => state.profile?.role === 'editor';
+
+function toast(msg, isError){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+
+/* ======================================================================
+   3) INIT
+   ====================================================================== */
+async function init(){
+  bindStaticEvents();
+
+  if(!isConfigured){
+    $('#connLabel').textContent = 'Not configured';
+    $('#connDot').classList.add('err');
+    $('#notConfiguredCard').style.display = 'block';
+    renderAuthZone();
+    return;
+  }
+
+  try{
+    const { data: { session } } = await sb.auth.getSession();
+    state.session = session;
+    if(session) await loadProfile(session.user.id);
+
+    $('#connDot').classList.add('on');
+    $('#connLabel').textContent = 'Connected';
+  }catch(e){
+    console.error(e);
+    $('#connDot').classList.add('err');
+    $('#connLabel').textContent = 'Connection error';
+    toast('Could not reach Supabase — check the URL/key and that schema.sql was run.', true);
+  }
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    state.session = session;
+    if(session){
+      await loadProfile(session.user.id);
+    }else{
+      state.profile = null;
+    }
+    renderAuthZone();
+    renderSettings();
+  });
+
+  renderAuthZone();
+  loadClubSettings();
+  loadMembers();
+
+  // Realtime: keep every connected user in sync, no refresh needed.
+  sb.channel('realtime:club_settings')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'club_settings' }, loadClubSettings)
+    .subscribe();
+  sb.channel('realtime:profiles')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+      loadMembers();
+      if(state.session) loadProfile(state.session.user.id).then(renderAuthZone);
+    })
+    .subscribe();
+}
+
+async function loadProfile(userId){
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+  if(error){ console.error(error); return; }
+  state.profile = data;
+}
+
+/* ======================================================================
+   4) TABS
+   ====================================================================== */
+function bindStaticEvents(){
+  $$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  $$('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.close));
+  });
+
+  $('#modeSignIn').addEventListener('click', () => setAuthMode('sign-in'));
+  $('#modeSignUp').addEventListener('click', () => setAuthMode('sign-up'));
+  $('#authSubmit').addEventListener('click', submitAuth);
+
+  $('#saveClubBtn').addEventListener('click', saveClubSettings);
+  $('#logoFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) uploadLogo(file);
+  });
+}
+
+function switchTab(tab){
+  state.activeTab = tab;
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $('#view-' + tab).classList.add('active');
+}
+
+/* ======================================================================
+   5) AUTH
+   ====================================================================== */
+function renderAuthZone(){
+  const zone = $('#authZone');
+  if(!state.session){
+    zone.innerHTML = `<button class="btn btn-primary btn-sm" id="openAuthBtn">Sign in</button>`;
+    $('#openAuthBtn').addEventListener('click', () => openModal('authModal'));
+    return;
+  }
+  const role = state.profile?.role || 'viewer';
+  const name = state.profile?.full_name || state.session.user.email;
+  zone.innerHTML = `
+    <div class="user-chip">
+      <span>${escapeHtml(name)}</span>
+      <span class="role-badge ${role}">${role}</span>
+      <button class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
+    </div>`;
+  $('#signOutBtn').addEventListener('click', async () => { await sb.auth.signOut(); toast('Signed out'); });
+}
+
+function setAuthMode(mode){
+  state.authMode = mode;
+  $('#modeSignIn').classList.toggle('active', mode === 'sign-in');
+  $('#modeSignUp').classList.toggle('active', mode === 'sign-up');
+  $('#fullNameField').style.display = mode === 'sign-up' ? 'flex' : 'none';
+  $('#authModalTitle').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
+  $('#authSubmit').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
+  $('#authError').style.display = 'none';
+  $('#authInfo').style.display = 'none';
+}
+
+async function submitAuth(){
+  const email = $('#authEmail').value.trim();
+  const password = $('#authPassword').value;
+  const fullName = $('#authFullName').value.trim();
+  const errEl = $('#authError');
+  const infoEl = $('#authInfo');
+  errEl.style.display = 'none';
+  infoEl.style.display = 'none';
+
+  if(!email || !password){
+    errEl.textContent = 'Email and password are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  $('#authSubmit').disabled = true;
+  let result;
+  if(state.authMode === 'sign-in'){
+    result = await sb.auth.signInWithPassword({ email, password });
+  }else{
+    result = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+  }
+  $('#authSubmit').disabled = false;
+
+  if(result.error){
+    errEl.textContent = result.error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if(state.authMode === 'sign-up'){
+    infoEl.textContent = 'Account created. If email confirmation is on, check your inbox, then sign in.';
+    infoEl.style.display = 'block';
+    setAuthMode('sign-in');
+    return;
+  }
+
+  closeModal('authModal');
+  toast('Signed in');
+}
+
+/* ======================================================================
+   6) MODALS
+   ====================================================================== */
+function openModal(id){ $('#' + id).classList.add('show'); }
+function closeModal(id){ $('#' + id).classList.remove('show'); }
+
+/* ======================================================================
+   7) SETTINGS — club profile + team members (fully working in Milestone 1)
+   ====================================================================== */
+function renderSettings(){
+  $('#settingsContent').style.display = isConfigured ? 'block' : 'none';
+  const editable = isEditor();
+  $('#clubNameInput').disabled = !editable;
+  $('#saveClubBtn').style.display = editable ? 'inline-flex' : 'none';
+  $('#uploadLogoBtn').style.display = editable ? 'inline-flex' : 'none';
+  renderMembers();
+}
+
+async function loadClubSettings(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('club_settings').select('*').eq('id', CLUB_SETTINGS_ID).maybeSingle();
+  if(error){ console.error(error); return; }
+  state.club = data;
+  $('#clubNameInput').value = data?.club_name || '';
+  $('#logoPreview').innerHTML = data?.club_logo_url
+    ? `<img src="${data.club_logo_url}" alt="Club logo">`
+    : '⚽';
+  renderSettings();
+}
+
+async function saveClubSettings(){
+  const errEl = $('#clubError');
+  errEl.style.display = 'none';
+  const club_name = $('#clubNameInput').value.trim();
+  const { error } = await sb.from('club_settings').upsert({ id: CLUB_SETTINGS_ID, club_name });
+  if(error){
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  toast('Club profile saved');
+}
+
+async function uploadLogo(file){
+  $('#uploadLogoLabel').textContent = 'Uploading…';
+  const ext = file.name.split('.').pop();
+  const path = `club-logo-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await sb.storage.from('club-assets').upload(path, file, { upsert: true });
+  if(uploadError){
+    toast(uploadError.message, true);
+    $('#uploadLogoLabel').textContent = 'Upload logo';
+    return;
+  }
+  const { data: publicUrl } = sb.storage.from('club-assets').getPublicUrl(path);
+  const club_name = $('#clubNameInput').value.trim() || state.club?.club_name || 'My Club';
+  const { error: updateError } = await sb.from('club_settings')
+    .upsert({ id: CLUB_SETTINGS_ID, club_logo_url: publicUrl.publicUrl, club_name });
+
+  $('#uploadLogoLabel').textContent = 'Upload logo';
+  if(updateError){ toast(updateError.message, true); return; }
+  toast('Logo updated');
+}
+
+async function loadMembers(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: true });
+  if(error){ console.error(error); return; }
+  state.members = data || [];
+  renderMembers();
+}
+
+function renderMembers(){
+  const el = $('#membersList');
+  if(!state.members.length){
+    el.innerHTML = '<p class="hint">No team members yet.</p>';
+    return;
+  }
+  const editable = isEditor();
+  el.innerHTML = state.members.map(m => `
+    <div class="member-row">
+      <div>
+        <div class="member-name">${escapeHtml(m.full_name || 'Unnamed user')}</div>
+        <div class="member-role">${m.role}</div>
+      </div>
+      ${editable ? `<button class="btn btn-ghost btn-sm" data-toggle-role="${m.id}" data-current-role="${m.role}">
+        Make ${m.role === 'editor' ? 'Viewer' : 'Editor'}
+      </button>` : ''}
+    </div>
+  `).join('');
+
+  if(editable){
+    $$('[data-toggle-role]').forEach(btn => {
+      btn.addEventListener('click', () => toggleRole(btn.dataset.toggleRole, btn.dataset.currentRole));
+    });
+  }
+}
+
+async function toggleRole(id, currentRole){
+  const nextRole = currentRole === 'editor' ? 'viewer' : 'editor';
+  const { error } = await sb.from('profiles').update({ role: nextRole }).eq('id', id);
+  if(error){ toast(error.message, true); return; }
+  toast('Role updated');
+}
+
+/* ======================================================================
+   8) UTIL
+   ====================================================================== */
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>
