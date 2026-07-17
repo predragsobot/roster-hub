@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Football team management: roster, tactical line builder and matchday squad selection.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 <title>Football Team Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -78,7 +80,8 @@
 
   main{max-width:1200px;margin:0 auto;padding:24px 20px;width:100%;flex:1;}
   .view{display:none;}
-  .view.active{display:block;}
+  .view.active{display:block;animation:fadeIn .18s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;}
   .card + .card{margin-top:16px;}
@@ -255,6 +258,11 @@
   @media(max-width:640px){
     .brand-text{display:none;}
     .modal{max-width:100%;}
+    .search-input{min-width:0;flex:1 1 140px;}
+    #playerModal [style*="grid-template-columns:1fr 1fr"],
+    #view-matchSquad [style*="grid-template-columns:1fr 1fr 1fr"]{
+      grid-template-columns:1fr !important;
+    }
   }
 </style>
 </head>
@@ -522,6 +530,19 @@
   </div>
 </div>
 
+<!-- CONFIRM MODAL (replaces native confirm()) -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-body" style="padding-top:24px;">
+      <p id="confirmMessage" style="font-size:14px;margin:0;"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="confirmCancelBtn">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
 <div id="exportSheet"></div>
 
 <div class="toast" id="toast"></div>
@@ -588,6 +609,7 @@ let state = {
   dragSource: null,
   matchSquad: null,
   matchSquadPlayers: [],
+  loaded: { players: false, staff: false, squad: false },
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -696,6 +718,8 @@ async function loadProfile(userId){
    4) TABS
    ====================================================================== */
 function bindStaticEvents(){
+  bindConfirmDialog();
+
   $$('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
@@ -862,6 +886,23 @@ async function submitAuth(){
 function openModal(id){ $('#' + id).classList.add('show'); }
 function closeModal(id){ $('#' + id).classList.remove('show'); }
 
+let _confirmResolve = null;
+function confirmDialog(message){
+  $('#confirmMessage').textContent = message;
+  openModal('confirmModal');
+  return new Promise((resolve) => { _confirmResolve = resolve; });
+}
+function bindConfirmDialog(){
+  $('#confirmCancelBtn').addEventListener('click', () => {
+    closeModal('confirmModal');
+    if(_confirmResolve){ _confirmResolve(false); _confirmResolve = null; }
+  });
+  $('#confirmOkBtn').addEventListener('click', () => {
+    closeModal('confirmModal');
+    if(_confirmResolve){ _confirmResolve(true); _confirmResolve = null; }
+  });
+}
+
 /* ======================================================================
    7) SETTINGS — club profile + team members (fully working in Milestone 1)
    ====================================================================== */
@@ -877,7 +918,7 @@ function renderSettings(){
 async function loadClubSettings(){
   if(!isConfigured) return;
   const { data, error } = await sb.from('club_settings').select('*').eq('id', CLUB_SETTINGS_ID).maybeSingle();
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load club settings: ' + error.message, true); return; }
   state.club = data;
   $('#clubNameInput').value = data?.club_name || '';
   $('#logoPreview').innerHTML = data?.club_logo_url
@@ -923,7 +964,7 @@ async function uploadLogo(file){
 async function loadMembers(){
   if(!isConfigured) return;
   const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: true });
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load team members: ' + error.message, true); return; }
   state.members = data || [];
   renderMembers();
 }
@@ -967,8 +1008,9 @@ async function toggleRole(id, currentRole){
 async function loadPlayers(){
   if(!isConfigured) return;
   const { data, error } = await sb.from('players').select('*');
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load players: ' + error.message, true); return; }
   state.players = data || [];
+  state.loaded.players = true;
   renderPlayers();
   renderBench();
   renderMatchSquad();
@@ -1000,9 +1042,16 @@ function renderPlayers(){
   const editable = isEditor();
   $('#addPlayerBtn').style.display = editable ? 'inline-flex' : 'none';
 
-  const list = filteredSortedPlayers();
   const grid = $('#playerGrid');
   const empty = $('#playersEmpty');
+
+  if(!state.loaded.players){
+    grid.innerHTML = '<div class="spinner center"></div>';
+    empty.style.display = 'none';
+    return;
+  }
+
+  const list = filteredSortedPlayers();
 
   if(!state.players.length){
     grid.innerHTML = '';
@@ -1139,7 +1188,7 @@ async function savePlayer(){
 
 async function deletePlayer(){
   if(!state.editingPlayerId) return;
-  if(!confirm('Delete this player? This cannot be undone.')) return;
+  if(!(await confirmDialog('Delete this player? This cannot be undone.'))) return;
 
   const { error } = await sb.from('players').delete().eq('id', state.editingPlayerId);
   if(error){ toast(error.message, true); return; }
@@ -1154,7 +1203,7 @@ async function deletePlayer(){
 async function loadFormations(){
   if(!isConfigured) return;
   const { data, error } = await sb.from('formations').select('*').order('name');
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load formations: ' + error.message, true); return; }
   state.formations = data || [];
   $('#formationSelect').innerHTML = state.formations.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
   if(state.lineup) $('#formationSelect').value = state.lineup.formation_id;
@@ -1164,7 +1213,7 @@ async function loadFormations(){
 async function loadLineup(){
   if(!isConfigured) return;
   let { data, error } = await sb.from('lineups').select('*').eq('id', CURRENT_LINEUP_ID).maybeSingle();
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load lineup: ' + error.message, true); return; }
 
   if(!data){
     const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
@@ -1185,7 +1234,7 @@ async function loadLineup(){
 async function loadLineupPlayers(){
   if(!isConfigured || !state.lineup) return;
   const { data, error } = await sb.from('lineup_players').select('*').eq('lineup_id', CURRENT_LINEUP_ID);
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load lineup players: ' + error.message, true); return; }
   state.lineupPlayers = data || [];
   renderPitch();
   renderBench();
@@ -1385,8 +1434,9 @@ async function onDisplayModeChange(e){
 async function loadStaff(){
   if(!isConfigured) return;
   const { data, error } = await sb.from('staff').select('*').order('created_at', { ascending: true });
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load staff: ' + error.message, true); return; }
   state.staff = data || [];
+  state.loaded.staff = true;
   renderStaff();
 }
 
@@ -1395,6 +1445,10 @@ function renderStaff(){
   $('#addStaffBtn').style.display = editable ? 'inline-flex' : 'none';
 
   const list = $('#staffList');
+  if(!state.loaded.staff){
+    list.innerHTML = '<div class="spinner center"></div>';
+    return;
+  }
   if(!state.staff.length){
     list.innerHTML = '<p class="hint">No staff added yet.</p>';
     return;
@@ -1453,7 +1507,7 @@ async function saveStaff(){
 
 async function deleteStaff(){
   if(!state.editingStaffId) return;
-  if(!confirm('Delete this staff member?')) return;
+  if(!(await confirmDialog('Delete this staff member?'))) return;
   const { error } = await sb.from('staff').delete().eq('id', state.editingStaffId);
   if(error){ toast(error.message, true); return; }
   closeModal('staffModal');
@@ -1466,7 +1520,7 @@ async function deleteStaff(){
 async function loadMatchSquad(){
   if(!isConfigured) return;
   let { data, error } = await sb.from('match_squads').select('*').eq('id', CURRENT_MATCH_SQUAD_ID).maybeSingle();
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load match squad: ' + error.message, true); return; }
 
   if(!data){
     const inserted = await sb.from('match_squads')
@@ -1485,8 +1539,9 @@ async function loadMatchSquad(){
 async function loadMatchSquadPlayers(){
   if(!isConfigured || !state.matchSquad) return;
   const { data, error } = await sb.from('match_squad_players').select('*').eq('match_squad_id', CURRENT_MATCH_SQUAD_ID);
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); toast('Could not load squad players: ' + error.message, true); return; }
   state.matchSquadPlayers = data || [];
+  state.loaded.squad = true;
   renderMatchSquad();
 }
 
@@ -1504,6 +1559,12 @@ function renderMatchSquad(){
   const countTag = $('#selectedCount');
   countTag.textContent = `${selected.length}/${size}`;
   countTag.className = 'tag' + (selected.length > size ? ' tag-warn' : '');
+
+  if(!state.loaded.squad){
+    $('#selectedList').innerHTML = '<div class="spinner center"></div>';
+    $('#notSelectedList').innerHTML = '<div class="spinner center"></div>';
+    return;
+  }
 
   const rowHtml = (p) => `
     <div class="squad-row" data-player="${p.id}" draggable="${editable}">
