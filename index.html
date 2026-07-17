@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   /* ===================== DESIGN TOKENS ===================== */
   :root{
@@ -216,6 +218,38 @@
   .toast.show{display:block;}
   .toast.error{border-color:rgba(224,85,79,.5);color:#ffb3af;}
 
+  .squad-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:680px){.squad-columns{grid-template-columns:1fr;}}
+  .squad-list{max-height:420px;overflow-y:auto;}
+  .squad-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .1s ease;border-radius:6px;}
+  .squad-row:hover{background:var(--surface-2);}
+  .squad-row:last-child{border-bottom:none;}
+  .squad-row .avatar{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;color:var(--muted);flex-shrink:0;}
+  .squad-row .avatar img{width:100%;height:100%;object-fit:cover;}
+  .squad-row .sname{font-size:13px;font-weight:600;}
+  .squad-row .stag{font-size:11px;color:var(--muted);margin-top:1px;}
+  .tag-warn{color:#e0a13f;border-color:rgba(224,161,63,.4);background:rgba(224,161,63,.12);}
+
+  #exportSheet{position:fixed;top:0;left:-9999px;width:800px;background:#ffffff;color:#111318;
+    padding:36px;font-family:'Inter',sans-serif;}
+  .ex-header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #178754;padding-bottom:16px;margin-bottom:22px;}
+  .ex-logo{width:60px;height:60px;object-fit:contain;}
+  .ex-title{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;}
+  .ex-sub{color:#555;font-size:13px;margin-top:2px;}
+  .ex-section{margin-bottom:22px;}
+  .ex-section h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#178754;
+    border-bottom:1px solid #e2e2e2;padding-bottom:6px;margin:0 0 10px;font-family:'Oswald',sans-serif;}
+  .ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;}
+  .ex-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed #eee;}
+  .ex-footer{margin-top:10px;font-size:10.5px;color:#999;text-align:right;}
+
+  @media print{
+    body > *:not(#exportSheet){display:none !important;}
+    #exportSheet{position:static !important;left:auto !important;width:100% !important;}
+  }
+
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
 
   @media(max-width:640px){
@@ -306,11 +340,43 @@
     </div>
 
     <div class="view" id="view-matchSquad">
-      <div class="empty-state">
-        <div class="icon">📋</div>
-        <h3>Match Squad</h3>
-        <p>Configurable squad size, selected / not-selected lists with drag and drop, plus PDF, PNG and print export.</p>
-        <span class="milestone-tag">Arrives in Milestone 4</span>
+      <div class="card">
+        <h2>Match info</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px;">
+          <div class="field"><label>Opponent</label><input type="text" id="msOpponent" placeholder="e.g. AEK"></div>
+          <div class="field"><label>Match date</label><input type="date" id="msDate"></div>
+          <div class="field"><label>Squad size</label>
+            <select class="select" id="msSquadSize">
+              <option value="18">18 players</option>
+              <option value="20">20 players</option>
+              <option value="22">22 players</option>
+              <option value="23">23 players</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="squad-columns">
+        <div class="card">
+          <h2>Selected <span class="tag" id="selectedCount" style="margin-left:4px;"></span></h2>
+          <p class="sub">Tap or drag a player to move them to Not selected.</p>
+          <div class="squad-list" id="selectedList"></div>
+        </div>
+        <div class="card">
+          <h2>Not selected</h2>
+          <p class="sub">Tap or drag a player to add them to the squad.</p>
+          <div class="squad-list" id="notSelectedList"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Export</h2>
+        <p class="sub">Club logo, match squad, starting XI, formation, substitutes and staff — ready to share or print.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="exportPdfBtn">⬇ Export PDF</button>
+          <button class="btn btn-secondary btn-sm" id="exportPngBtn">⬇ Export PNG</button>
+          <button class="btn btn-secondary btn-sm" id="printBtn">🖨 Print</button>
+        </div>
       </div>
     </div>
 
@@ -456,6 +522,8 @@
   </div>
 </div>
 
+<div id="exportSheet"></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -479,6 +547,9 @@ const POSITIONS = ['GK','LB','CB','RB','LWB','RWB','DM','CM','AM','LM','RM','LW'
 // Milestone 3 focused on one auto-saved tactical board rather than a full
 // multi-lineup manager.
 const CURRENT_LINEUP_ID = '00000000-0000-0000-0000-000000000002';
+
+// Same singleton pattern for the matchday squad (Milestone 4).
+const CURRENT_MATCH_SQUAD_ID = '00000000-0000-0000-0000-000000000003';
 
 const PITCH_MARKINGS = `
   <div class="pitch-halfway"></div>
@@ -515,6 +586,8 @@ let state = {
   selectedSource: null,
   dragPlayerId: null,
   dragSource: null,
+  matchSquad: null,
+  matchSquadPlayers: [],
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -569,6 +642,7 @@ async function init(){
     renderPitch();
     renderBench();
     renderStaff();
+    renderMatchSquad();
   });
 
   renderAuthZone();
@@ -577,6 +651,7 @@ async function init(){
   loadPlayers();
   loadFormations().then(loadLineup).then(loadLineupPlayers);
   loadStaff();
+  loadMatchSquad().then(loadMatchSquadPlayers);
 
   // Realtime: keep every connected user in sync, no refresh needed.
   sb.channel('realtime:club_settings')
@@ -602,6 +677,12 @@ async function init(){
     .subscribe();
   sb.channel('realtime:staff')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, loadStaff)
+    .subscribe();
+  sb.channel('realtime:match_squads')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'match_squads' }, loadMatchSquad)
+    .subscribe();
+  sb.channel('realtime:match_squad_players')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'match_squad_players' }, loadMatchSquadPlayers)
     .subscribe();
 }
 
@@ -672,6 +753,27 @@ function bindStaticEvents(){
   $('#addStaffBtn').addEventListener('click', () => openStaffModal(null));
   $('#saveStaffBtn').addEventListener('click', saveStaff);
   $('#deleteStaffBtn').addEventListener('click', deleteStaff);
+
+  $('#msOpponent').addEventListener('blur', saveMatchInfo);
+  $('#msDate').addEventListener('change', saveMatchInfo);
+  $('#msSquadSize').addEventListener('change', onSquadSizeChange);
+
+  $('#selectedList').addEventListener('dragover', (e) => e.preventDefault());
+  $('#selectedList').addEventListener('drop', (e) => {
+    e.preventDefault();
+    if(state.dragPlayerId) addToSquad(state.dragPlayerId);
+    state.dragPlayerId = null;
+  });
+  $('#notSelectedList').addEventListener('dragover', (e) => e.preventDefault());
+  $('#notSelectedList').addEventListener('drop', (e) => {
+    e.preventDefault();
+    if(state.dragPlayerId) removeFromSquad(state.dragPlayerId);
+    state.dragPlayerId = null;
+  });
+
+  $('#exportPdfBtn').addEventListener('click', exportPDF);
+  $('#exportPngBtn').addEventListener('click', exportPNG);
+  $('#printBtn').addEventListener('click', printSquad);
 }
 
 function switchTab(tab){
@@ -869,6 +971,7 @@ async function loadPlayers(){
   state.players = data || [];
   renderPlayers();
   renderBench();
+  renderMatchSquad();
 }
 
 function filteredSortedPlayers(){
@@ -1358,7 +1461,198 @@ async function deleteStaff(){
 }
 
 /* ======================================================================
-   11) UTIL
+   11) MATCH SQUAD
+   ====================================================================== */
+async function loadMatchSquad(){
+  if(!isConfigured) return;
+  let { data, error } = await sb.from('match_squads').select('*').eq('id', CURRENT_MATCH_SQUAD_ID).maybeSingle();
+  if(error){ console.error(error); return; }
+
+  if(!data){
+    const inserted = await sb.from('match_squads')
+      .upsert({ id: CURRENT_MATCH_SQUAD_ID, name: 'Matchday squad', squad_size: 20 })
+      .select().single();
+    data = inserted.data;
+  }
+
+  state.matchSquad = data;
+  $('#msOpponent').value = data?.opponent || '';
+  $('#msDate').value = data?.match_date || '';
+  $('#msSquadSize').value = data?.squad_size || 20;
+  renderMatchSquad();
+}
+
+async function loadMatchSquadPlayers(){
+  if(!isConfigured || !state.matchSquad) return;
+  const { data, error } = await sb.from('match_squad_players').select('*').eq('match_squad_id', CURRENT_MATCH_SQUAD_ID);
+  if(error){ console.error(error); return; }
+  state.matchSquadPlayers = data || [];
+  renderMatchSquad();
+}
+
+function renderMatchSquad(){
+  const editable = isEditor();
+  $('#msOpponent').disabled = !editable;
+  $('#msDate').disabled = !editable;
+  $('#msSquadSize').disabled = !editable;
+
+  const size = state.matchSquad?.squad_size || 20;
+  const selectedIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
+  const selected = state.players.filter(p => selectedIds.has(p.id));
+  const notSelected = state.players.filter(p => !selectedIds.has(p.id));
+
+  const countTag = $('#selectedCount');
+  countTag.textContent = `${selected.length}/${size}`;
+  countTag.className = 'tag' + (selected.length > size ? ' tag-warn' : '');
+
+  const rowHtml = (p) => `
+    <div class="squad-row" data-player="${p.id}" draggable="${editable}">
+      <div class="avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : (p.shirt_number ?? '👤')}</div>
+      <div style="flex:1;">
+        <div class="sname">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
+        <div class="stag">${p.primary_position}${p.shirt_number ? ' · #' + p.shirt_number : ''}</div>
+      </div>
+    </div>`;
+
+  $('#selectedList').innerHTML = selected.length
+    ? selected.map(rowHtml).join('')
+    : '<p class="hint">No players selected yet.</p>';
+  $('#notSelectedList').innerHTML = notSelected.length
+    ? notSelected.map(rowHtml).join('')
+    : '<p class="hint">Everyone is selected.</p>';
+
+  if(editable){
+    $$('#view-matchSquad .squad-row').forEach(row => {
+      row.addEventListener('click', () => toggleSquadMember(row.dataset.player));
+      row.addEventListener('dragstart', () => { state.dragPlayerId = row.dataset.player; });
+    });
+  }
+}
+
+async function toggleSquadMember(playerId){
+  if(!isEditor()) return;
+  if(state.matchSquadPlayers.find(x => x.player_id === playerId)) await removeFromSquad(playerId);
+  else await addToSquad(playerId);
+}
+
+async function addToSquad(playerId){
+  if(state.matchSquadPlayers.find(x => x.player_id === playerId)) return;
+  const size = state.matchSquad?.squad_size || 20;
+  if(state.matchSquadPlayers.length >= size){
+    toast(`Squad is full (${size}). Increase squad size or remove someone first.`, true);
+    return;
+  }
+  await sb.from('match_squad_players').insert({ match_squad_id: CURRENT_MATCH_SQUAD_ID, player_id: playerId, is_selected: true });
+  await loadMatchSquadPlayers();
+}
+
+async function removeFromSquad(playerId){
+  const existing = state.matchSquadPlayers.find(x => x.player_id === playerId);
+  if(!existing) return;
+  await sb.from('match_squad_players').delete().eq('id', existing.id);
+  await loadMatchSquadPlayers();
+}
+
+async function onSquadSizeChange(e){
+  await sb.from('match_squads').update({ squad_size: Number(e.target.value) }).eq('id', CURRENT_MATCH_SQUAD_ID);
+}
+
+async function saveMatchInfo(){
+  await sb.from('match_squads').update({
+    opponent: $('#msOpponent').value.trim() || null,
+    match_date: $('#msDate').value || null,
+  }).eq('id', CURRENT_MATCH_SQUAD_ID);
+}
+
+/* ======================================================================
+   12) EXPORT — PDF, PNG, Print
+   ====================================================================== */
+function buildExportSheet(){
+  const squadPlayerIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
+  const squadPlayers = state.players.filter(p => squadPlayerIds.has(p.id));
+  const startingIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
+  const startingPlayers = squadPlayers.filter(p => startingIds.has(p.id));
+  const subPlayers = squadPlayers.filter(p => !startingIds.has(p.id));
+  const formation = currentFormation();
+  const clubName = state.club?.club_name || 'My Club';
+  const logo = state.club?.club_logo_url;
+  const dateStr = state.matchSquad?.match_date
+    ? new Date(state.matchSquad.match_date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const opponent = state.matchSquad?.opponent;
+
+  const playerRow = (p) => `<div class="ex-row"><span>${p.shirt_number ?? '–'} · ${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</span><span>${p.primary_position}</span></div>`;
+  const staffRow = (s) => `<div class="ex-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
+
+  $('#exportSheet').innerHTML = `
+    <div class="ex-header">
+      ${logo ? `<img class="ex-logo" src="${logo}" crossorigin="anonymous" alt="">` : ''}
+      <div>
+        <div class="ex-title">${escapeHtml(clubName)}</div>
+        <div class="ex-sub">${opponent ? 'vs ' + escapeHtml(opponent) + ' — ' : ''}${dateStr}</div>
+      </div>
+    </div>
+    <div class="ex-section">
+      <h3>Match Squad (${squadPlayers.length})</h3>
+      <div class="ex-grid">${squadPlayers.length ? squadPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
+    </div>
+    <div class="ex-section">
+      <h3>Starting XI — ${formation ? formation.name : '—'}</h3>
+      <div class="ex-grid">${startingPlayers.length ? startingPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
+    </div>
+    <div class="ex-section">
+      <h3>Substitutes</h3>
+      <div class="ex-grid">${subPlayers.length ? subPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
+    </div>
+    <div class="ex-section">
+      <h3>Staff</h3>
+      <div class="ex-grid">${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-row">—</div>'}</div>
+    </div>
+    <div class="ex-footer">Generated ${new Date().toLocaleString()}</div>
+  `;
+}
+
+async function exportPNG(){
+  try{
+    buildExportSheet();
+    await new Promise((r) => setTimeout(r, 60));
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    const link = document.createElement('a');
+    link.download = 'match-squad.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    console.error(e);
+    toast('Export failed — see console for details.', true);
+  }
+}
+
+async function exportPDF(){
+  try{
+    buildExportSheet();
+    await new Promise((r) => setTimeout(r, 60));
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+    pdf.save('match-squad.pdf');
+  }catch(e){
+    console.error(e);
+    toast('Export failed — see console for details.', true);
+  }
+}
+
+function printSquad(){
+  buildExportSheet();
+  setTimeout(() => window.print(), 60);
+}
+
+/* ======================================================================
+   13) UTIL
    ====================================================================== */
 function escapeHtml(str){
   const div = document.createElement('div');
