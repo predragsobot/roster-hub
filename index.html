@@ -235,22 +235,60 @@
   .squad-row .stag{font-size:11px;color:var(--muted);margin-top:1px;}
   .tag-warn{color:#e0a13f;border-color:rgba(224,161,63,.4);background:rgba(224,161,63,.12);}
 
-  #exportSheet{position:fixed;top:0;left:-9999px;width:800px;background:#ffffff;color:#111318;
-    padding:36px;font-family:'Inter',sans-serif;}
-  .ex-header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #178754;padding-bottom:16px;margin-bottom:22px;}
-  .ex-logo{width:60px;height:60px;object-fit:contain;}
-  .ex-title{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;}
-  .ex-sub{color:#555;font-size:13px;margin-top:2px;}
-  .ex-section{margin-bottom:22px;}
-  .ex-section h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#178754;
-    border-bottom:1px solid #e2e2e2;padding-bottom:6px;margin:0 0 10px;font-family:'Oswald',sans-serif;}
-  .ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;}
-  .ex-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed #eee;}
-  .ex-footer{margin-top:10px;font-size:10.5px;color:#999;text-align:right;}
+  #exportSheet{position:fixed;top:0;left:-9999px;width:1240px;
+    background:linear-gradient(160deg,#0c1a2e,#0a1420 65%);color:#eef3fb;
+    padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
+
+  .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:6px;}
+  .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
+  .ex-club-logo,.ex-opponent-logo{width:56px;height:56px;border-radius:50%;object-fit:contain;flex-shrink:0;
+    background:#0e1c30;border:2px solid rgba(255,255,255,.15);}
+  .ex-eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5fb3ff;font-weight:700;}
+  .ex-team-name{font-size:21px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+  .ex-vs{font-size:13px;font-weight:800;color:rgba(255,255,255,.32);padding:0 14px;flex-shrink:0;}
+  .ex-opponent{display:flex;align-items:center;gap:14px;flex-direction:row-reverse;text-align:right;min-width:0;}
+  .ex-spacer{flex:1;}
+  .ex-formation-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:13px;
+    padding:9px 20px;text-align:center;flex-shrink:0;}
+  .ex-formation-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;}
+  .ex-datestr{font-size:11.5px;color:rgba(255,255,255,.4);margin:14px 0 20px;}
+
+  .ex-body{display:flex;gap:20px;}
+  .ex-pitch-panel{flex:1.35;position:relative;aspect-ratio:68/86;border-radius:16px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.1);
+    background:repeating-linear-gradient(to bottom,#163a24 0 12.5%,#123120 12.5% 25%);}
+  .ex-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .ex-slot-circle{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;
+    border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);}
+  .ex-slot-empty{width:52px;height:52px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:rgba(255,255,255,.4);}
+  .ex-slot-label{font-size:10.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:2px 9px;
+    border-radius:6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+
+  .ex-subs-panel{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);
+    border-radius:16px;padding:20px;display:flex;flex-direction:column;}
+  .ex-subs-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+  .ex-subs-title{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8fd3ff;}
+  .ex-subs-count{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;flex-shrink:0;}
+  .ex-subs-sub{font-size:11px;color:rgba(255,255,255,.42);margin-bottom:12px;}
+  .ex-sub-row{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .ex-sub-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+  .ex-sub-name{flex:1;font-size:12.5px;font-weight:700;}
+  .ex-sub-pos{font-size:10.5px;color:rgba(255,255,255,.45);}
+  .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);}
+  .ex-staff-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:rgba(255,255,255,.78);}
+  .ex-staff-row span:last-child{color:rgba(255,255,255,.45);}
+  .ex-footer-tag{margin-top:auto;padding-top:12px;text-align:center;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(255,255,255,.28);}
 
   @media print{
     body > *:not(#exportSheet){display:none !important;}
-    #exportSheet{position:static !important;left:auto !important;width:100% !important;}
+    #exportSheet{position:static !important;left:auto !important;width:100% !important;border-radius:0 !important;}
   }
 
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
@@ -360,6 +398,16 @@
               <option value="22">22 players</option>
               <option value="23">23 players</option>
             </select>
+          </div>
+        </div>
+        <div class="logo-row" style="margin-top:14px;">
+          <div class="logo-preview" id="opponentLogoPreview" style="width:52px;height:52px;">🛡️</div>
+          <div>
+            <label class="btn btn-ghost btn-sm file-btn" id="opponentLogoBtn">
+              <span id="opponentLogoLabel">Upload opponent logo</span>
+              <input type="file" id="opponentLogoInput" accept="image/*">
+            </label>
+            <p class="hint" style="margin-top:6px;">Shown in the exported sheet next to your club's logo. Optional.</p>
           </div>
         </div>
       </div>
@@ -781,6 +829,10 @@ function bindStaticEvents(){
   $('#msOpponent').addEventListener('blur', saveMatchInfo);
   $('#msDate').addEventListener('change', saveMatchInfo);
   $('#msSquadSize').addEventListener('change', onSquadSizeChange);
+  $('#opponentLogoInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) uploadOpponentLogo(file);
+  });
 
   $('#selectedList').addEventListener('dragover', (e) => e.preventDefault());
   $('#selectedList').addEventListener('drop', (e) => {
@@ -1533,6 +1585,9 @@ async function loadMatchSquad(){
   $('#msOpponent').value = data?.opponent || '';
   $('#msDate').value = data?.match_date || '';
   $('#msSquadSize').value = data?.squad_size || 20;
+  $('#opponentLogoPreview').innerHTML = data?.opponent_logo_url
+    ? `<img src="${data.opponent_logo_url}" alt="">`
+    : '🛡️';
   renderMatchSquad();
 }
 
@@ -1625,6 +1680,26 @@ async function saveMatchInfo(){
   }).eq('id', CURRENT_MATCH_SQUAD_ID);
 }
 
+async function uploadOpponentLogo(file){
+  $('#opponentLogoLabel').textContent = 'Uploading…';
+  const ext = file.name.split('.').pop();
+  const path = `opponent-logo-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await sb.storage.from('club-assets').upload(path, file, { upsert: true });
+  if(uploadError){
+    toast(uploadError.message, true);
+    $('#opponentLogoLabel').textContent = 'Upload opponent logo';
+    return;
+  }
+  const { data: publicUrl } = sb.storage.from('club-assets').getPublicUrl(path);
+  const { error: updateError } = await sb.from('match_squads')
+    .update({ opponent_logo_url: publicUrl.publicUrl }).eq('id', CURRENT_MATCH_SQUAD_ID);
+
+  $('#opponentLogoLabel').textContent = 'Upload opponent logo';
+  if(updateError){ toast(updateError.message, true); return; }
+  toast('Opponent logo updated');
+}
+
 /* ======================================================================
    12) EXPORT — PDF, PNG, Print
    ====================================================================== */
@@ -1632,44 +1707,76 @@ function buildExportSheet(){
   const squadPlayerIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
   const squadPlayers = state.players.filter(p => squadPlayerIds.has(p.id));
   const startingIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
-  const startingPlayers = squadPlayers.filter(p => startingIds.has(p.id));
   const subPlayers = squadPlayers.filter(p => !startingIds.has(p.id));
   const formation = currentFormation();
+
   const clubName = state.club?.club_name || 'My Club';
-  const logo = state.club?.club_logo_url;
+  const clubLogo = state.club?.club_logo_url;
+  const opponent = state.matchSquad?.opponent;
+  const opponentLogo = state.matchSquad?.opponent_logo_url;
   const dateStr = state.matchSquad?.match_date
     ? new Date(state.matchSquad.match_date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-  const opponent = state.matchSquad?.opponent;
 
-  const playerRow = (p) => `<div class="ex-row"><span>${p.shirt_number ?? '–'} · ${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</span><span>${p.primary_position}</span></div>`;
-  const staffRow = (s) => `<div class="ex-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
+  const bySlot = {};
+  state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
+
+  const slotsHtml = (formation?.slots || []).map(slot => {
+    const lp = bySlot[slot.id];
+    const player = lp ? state.players.find(p => p.id === lp.player_id) : null;
+    if(player){
+      return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
+        <div class="ex-slot-circle">${player.shirt_number ?? ''}</div>
+        <div class="ex-slot-label">${escapeHtml(player.last_name)}</div>
+      </div>`;
+    }
+    return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
+      <div class="ex-slot-empty">${slot.role}</div>
+    </div>`;
+  }).join('');
+
+  const subRow = (p) => `
+    <div class="ex-sub-row">
+      <div class="ex-sub-num">${p.shirt_number ?? ''}</div>
+      <div class="ex-sub-name">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
+      <div class="ex-sub-pos">${p.primary_position}</div>
+    </div>`;
+  const staffRow = (s) => `<div class="ex-staff-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
 
   $('#exportSheet').innerHTML = `
-    <div class="ex-header">
-      ${logo ? `<img class="ex-logo" src="${logo}" crossorigin="anonymous" alt="">` : ''}
-      <div>
-        <div class="ex-title">${escapeHtml(clubName)}</div>
-        <div class="ex-sub">${opponent ? 'vs ' + escapeHtml(opponent) + ' — ' : ''}${dateStr}</div>
+    <div class="ex-topbar">
+      <div class="ex-club">
+        ${clubLogo ? `<img class="ex-club-logo" src="${clubLogo}" crossorigin="anonymous" alt="">` : ''}
+        <div><div class="ex-eyebrow">Match Day</div><div class="ex-team-name">${escapeHtml(clubName)}</div></div>
+      </div>
+      ${opponent ? `
+        <div class="ex-vs">VS</div>
+        <div class="ex-opponent">
+          ${opponentLogo ? `<img class="ex-opponent-logo" src="${opponentLogo}" crossorigin="anonymous" alt="">` : ''}
+          <div><div class="ex-eyebrow">Opponent</div><div class="ex-team-name">${escapeHtml(opponent)}</div></div>
+        </div>
+      ` : '<div class="ex-spacer"></div>'}
+      <div class="ex-spacer"></div>
+      <div class="ex-formation-badge"><div class="ex-eyebrow">Formation</div><div class="ex-formation-name">${formation ? formation.name : '—'}</div></div>
+    </div>
+    <div class="ex-datestr">${dateStr}</div>
+
+    <div class="ex-body">
+      <div class="ex-pitch-panel">${slotsHtml}</div>
+      <div class="ex-subs-panel">
+        <div class="ex-subs-head">
+          <div class="ex-subs-title">Substitutes</div>
+          <div class="ex-subs-count">${subPlayers.length}</div>
+        </div>
+        <div class="ex-subs-sub">Match squad bench</div>
+        ${subPlayers.length ? subPlayers.map(subRow).join('') : '<p style="color:rgba(255,255,255,.4);font-size:12px;">No substitutes selected.</p>'}
+        <div class="ex-staff-block">
+          <div class="ex-subs-title" style="margin-bottom:8px;">Staff</div>
+          ${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-staff-row"><span>—</span></div>'}
+        </div>
+        <div class="ex-footer-tag">Generated ${new Date().toLocaleDateString()}</div>
       </div>
     </div>
-    <div class="ex-section">
-      <h3>Match Squad (${squadPlayers.length})</h3>
-      <div class="ex-grid">${squadPlayers.length ? squadPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
-    </div>
-    <div class="ex-section">
-      <h3>Starting XI — ${formation ? formation.name : '—'}</h3>
-      <div class="ex-grid">${startingPlayers.length ? startingPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
-    </div>
-    <div class="ex-section">
-      <h3>Substitutes</h3>
-      <div class="ex-grid">${subPlayers.length ? subPlayers.map(playerRow).join('') : '<div class="ex-row">—</div>'}</div>
-    </div>
-    <div class="ex-section">
-      <h3>Staff</h3>
-      <div class="ex-grid">${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-row">—</div>'}</div>
-    </div>
-    <div class="ex-footer">Generated ${new Date().toLocaleString()}</div>
   `;
 }
 
@@ -1677,7 +1784,7 @@ async function exportPNG(){
   try{
     buildExportSheet();
     await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#0c1a2e', scale: 2, useCORS: true });
     const link = document.createElement('a');
     link.download = 'match-squad.png';
     link.href = canvas.toDataURL('image/png');
@@ -1692,14 +1799,19 @@ async function exportPDF(){
   try{
     buildExportSheet();
     await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#0c1a2e', scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdf = new jsPDF('l', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgWidth = pageWidth - 20;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let imgWidth = pageWidth - 20;
+    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+    if(imgHeight > pageHeight - 20){
+      imgHeight = pageHeight - 20;
+      imgWidth = (canvas.width * imgHeight) / canvas.height;
+    }
+    pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
     pdf.save('match-squad.pdf');
   }catch(e){
     console.error(e);
