@@ -240,30 +240,56 @@
   .chk input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
 
   #exportSheet{position:fixed;top:0;left:-9999px;width:1240px;
-    background:linear-gradient(160deg,#0c1a2e,#0a1420 65%);color:#eef3fb;
+    --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
+    --ex-accent:#5fb3ff;--ex-circle1:#3ec6ff;--ex-circle2:#1c6fd6;
+    --ex-chip-bg:#0e1c30;--ex-chip-border:rgba(255,255,255,.15);--ex-vs-color:rgba(255,255,255,.32);
+    --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
+    --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
+    --ex-divider:rgba(255,255,255,.06);--ex-divider2:rgba(255,255,255,.08);
+    --ex-count-bg:rgba(255,255,255,.08);--ex-count-border:rgba(255,255,255,.16);
+    background:linear-gradient(160deg,var(--ex-bg1),var(--ex-bg2) 65%);color:var(--ex-text);
     padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
+
+  #exportSheet[data-theme="white"]{
+    --ex-bg1:#ffffff;--ex-bg2:#f4f6f7;--ex-text:#12151c;--ex-muted:rgba(0,0,0,.5);--ex-muted2:rgba(0,0,0,.35);
+    --ex-accent:#178754;--ex-circle1:#3ec6ff;--ex-circle2:#1c6fd6;
+    --ex-chip-bg:#eef2f5;--ex-chip-border:#dde3ec;--ex-vs-color:rgba(0,0,0,.3);
+    --ex-badge-bg:#eef2f5;--ex-badge-border:#dde3ec;
+    --ex-panel-bg:#f7f9f8;--ex-panel-border:#e3e8e4;
+    --ex-divider:rgba(0,0,0,.08);--ex-divider2:rgba(0,0,0,.1);
+    --ex-count-bg:#eef2f0;--ex-count-border:#dde3de;
+  }
+  #exportSheet[data-theme="gray"]{
+    --ex-bg1:#33363d;--ex-bg2:#24262b;--ex-text:#f1f2f4;--ex-muted:rgba(255,255,255,.5);--ex-muted2:rgba(255,255,255,.35);
+    --ex-accent:#c6cad2;--ex-circle1:#9aa1ac;--ex-circle2:#5f6672;
+    --ex-chip-bg:#3d4048;--ex-chip-border:rgba(255,255,255,.18);--ex-vs-color:rgba(255,255,255,.35);
+    --ex-badge-bg:rgba(255,255,255,.07);--ex-badge-border:rgba(255,255,255,.16);
+    --ex-panel-bg:rgba(255,255,255,.04);--ex-panel-border:rgba(255,255,255,.12);
+    --ex-divider:rgba(255,255,255,.08);--ex-divider2:rgba(255,255,255,.1);
+    --ex-count-bg:rgba(255,255,255,.09);--ex-count-border:rgba(255,255,255,.18);
+  }
 
   .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:6px;}
   .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
   .ex-club-logo,.ex-opponent-logo{width:56px;height:56px;border-radius:50%;object-fit:contain;flex-shrink:0;
-    background:#0e1c30;border:2px solid rgba(255,255,255,.15);}
-  .ex-eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5fb3ff;font-weight:700;}
-  .ex-team-name{font-size:21px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;
+    background:var(--ex-chip-bg);border:2px solid var(--ex-chip-border);}
+  .ex-eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ex-accent);font-weight:700;}
+  .ex-team-name{font-size:21px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;color:var(--ex-text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
-  .ex-vs{font-size:13px;font-weight:800;color:rgba(255,255,255,.32);padding:0 14px;flex-shrink:0;}
+  .ex-vs{font-size:13px;font-weight:800;color:var(--ex-vs-color);padding:0 14px;flex-shrink:0;}
   .ex-opponent{display:flex;align-items:center;gap:14px;flex-direction:row-reverse;text-align:right;min-width:0;}
   .ex-spacer{flex:1;}
-  .ex-formation-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:13px;
+  .ex-formation-badge{background:var(--ex-badge-bg);border:1px solid var(--ex-badge-border);border-radius:13px;
     padding:9px 20px;text-align:center;flex-shrink:0;}
-  .ex-formation-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;}
-  .ex-datestr{font-size:11.5px;color:rgba(255,255,255,.4);margin:14px 0 20px;}
+  .ex-formation-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
+  .ex-datestr{font-size:11.5px;color:var(--ex-muted);margin:14px 0 20px;}
 
   .ex-body{display:flex;gap:20px;}
   .ex-pitch-panel{flex:1.35;position:relative;aspect-ratio:68/86;border-radius:16px;overflow:hidden;
     border:1px solid rgba(255,255,255,.1);
     background:repeating-linear-gradient(to bottom,#163a24 0 12.5%,#123120 12.5% 25%);}
   .ex-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;}
-  .ex-slot-circle{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
+  .ex-slot-circle{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
     display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;
     border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);overflow:hidden;}
   .ex-slot-empty{width:52px;height:52px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
@@ -271,24 +297,24 @@
   .ex-slot-label{font-size:10.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:2px 9px;
     border-radius:6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
 
-  .ex-subs-panel{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);
+  .ex-subs-panel{flex:1;background:var(--ex-panel-bg);border:1px solid var(--ex-panel-border);
     border-radius:16px;padding:20px;display:flex;flex-direction:column;}
   .ex-subs-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
-  .ex-subs-title{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8fd3ff;}
-  .ex-subs-count{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:14px;flex-shrink:0;}
-  .ex-subs-sub{font-size:11px;color:rgba(255,255,255,.42);margin-bottom:12px;}
-  .ex-sub-row{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06);}
-  .ex-sub-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
+  .ex-subs-title{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ex-accent);}
+  .ex-subs-count{width:32px;height:32px;border-radius:50%;background:var(--ex-count-bg);
+    border:1px solid var(--ex-count-border);display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;flex-shrink:0;color:var(--ex-text);}
+  .ex-subs-sub{font-size:11px;color:var(--ex-muted2);margin-bottom:12px;}
+  .ex-sub-row{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid var(--ex-divider);}
+  .ex-sub-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
     display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
-  .ex-sub-name{flex:1;font-size:12.5px;font-weight:700;}
-  .ex-sub-pos{font-size:10.5px;color:rgba(255,255,255,.45);}
-  .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);}
-  .ex-staff-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:rgba(255,255,255,.78);}
-  .ex-staff-row span:last-child{color:rgba(255,255,255,.45);}
+  .ex-sub-name{flex:1;font-size:12.5px;font-weight:700;color:var(--ex-text);}
+  .ex-sub-pos{font-size:10.5px;color:var(--ex-muted);}
+  .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid var(--ex-divider2);}
+  .ex-staff-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:var(--ex-text);opacity:.85;}
+  .ex-staff-row span:last-child{color:var(--ex-muted);opacity:1;}
   .ex-footer-tag{margin-top:auto;padding-top:12px;text-align:center;font-size:10px;letter-spacing:.1em;
-    text-transform:uppercase;color:rgba(255,255,255,.28);}
+    text-transform:uppercase;color:var(--ex-muted2);}
 
   @media print{
     body > *:not(#exportSheet){display:none !important;}
@@ -444,6 +470,13 @@
           <label class="chk"><input type="checkbox" id="optNames" checked> Player names</label>
           <label class="chk"><input type="checkbox" id="optSubs" checked> Include substitutes</label>
           <label class="chk"><input type="checkbox" id="optStaff" checked> Include staff</label>
+        </div>
+        <div style="margin-bottom:16px;">
+          <select class="select" id="exportTheme">
+            <option value="blue">Background: Blue</option>
+            <option value="white">Background: White</option>
+            <option value="gray">Background: Gray</option>
+          </select>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-secondary btn-sm" id="exportPdfBtn">⬇ Export PDF</button>
@@ -1825,6 +1858,7 @@ async function uploadOpponentLogo(file){
    12) EXPORT — PDF, PNG, Print
    ====================================================================== */
 function buildExportSheet(){
+  const theme = $('#exportTheme').value;
   const optPhotos = $('#optPhotos').checked;
   const optNumbers = $('#optNumbers').checked;
   const optNames = $('#optNames').checked;
@@ -1915,7 +1949,9 @@ function buildExportSheet(){
   }
   panelInner += `<div class="ex-footer-tag">Generated ${new Date().toLocaleDateString()}</div>`;
 
-  $('#exportSheet').innerHTML = `
+  const sheet = $('#exportSheet');
+  sheet.setAttribute('data-theme', theme);
+  sheet.innerHTML = `
     <div class="ex-topbar">
       <div class="ex-club">
         ${clubLogo ? `<img class="ex-club-logo" src="${clubLogo}" crossorigin="anonymous" alt="">` : ''}
@@ -1940,11 +1976,17 @@ function buildExportSheet(){
   `;
 }
 
+function exportBgFor(theme){
+  if(theme === 'white') return '#ffffff';
+  if(theme === 'gray') return '#24262b';
+  return '#0c1a2e';
+}
+
 async function exportPNG(){
   try{
     buildExportSheet();
     await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#0c1a2e', scale: 2, useCORS: true });
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
     const link = document.createElement('a');
     link.download = 'match-squad.png';
     link.href = canvas.toDataURL('image/png');
@@ -1959,7 +2001,7 @@ async function exportPDF(){
   try{
     buildExportSheet();
     await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: '#0c1a2e', scale: 2, useCORS: true });
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('l', 'mm', 'a4');
