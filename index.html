@@ -355,6 +355,12 @@
 
     <div class="view" id="view-lineBuilder">
       <div class="toolbar">
+        <select class="select" id="lineupSelect"></select>
+        <button class="btn btn-ghost btn-sm" id="newLineupBtn">+ New lineup</button>
+        <button class="btn btn-ghost btn-sm" id="clearLineupBtn">Clear</button>
+        <button class="btn btn-danger btn-sm" id="deleteLineupBtn">🗑 Delete</button>
+      </div>
+      <div class="toolbar">
         <select class="select" id="formationSelect"></select>
         <select class="select" id="displayModeSelect">
           <option value="photo">Photo only</option>
@@ -602,6 +608,20 @@
   </div>
 </div>
 
+<!-- PROMPT MODAL (for naming a new lineup) -->
+<div class="modal-overlay" id="promptModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head"><h3 id="promptTitle">Name this lineup</h3><button class="modal-close" data-close="promptModal">&times;</button></div>
+    <div class="modal-body">
+      <input type="text" class="input" id="promptInput">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="promptCancelBtn">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="promptOkBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="exportSheet"></div>
 
 <div class="toast" id="toast"></div>
@@ -622,11 +642,6 @@ const CLUB_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 // Position codes shared with the Line Builder's formation slots (Milestone 3),
 // so a player's primary position lines up with pitch roles later.
 const POSITIONS = ['GK','LB','CB','RB','LWB','RWB','DM','CM','AM','LM','RM','LW','RW','ST'];
-
-// Single working lineup (like club_settings, a singleton row) — keeps
-// Milestone 3 focused on one auto-saved tactical board rather than a full
-// multi-lineup manager.
-const CURRENT_LINEUP_ID = '00000000-0000-0000-0000-000000000002';
 
 // Same singleton pattern for the matchday squad (Milestone 4).
 const CURRENT_MATCH_SQUAD_ID = '00000000-0000-0000-0000-000000000003';
@@ -658,6 +673,8 @@ let state = {
   pendingPhotoFile: null,
   existingPhotoUrl: null,
   formations: [],
+  savedLineups: [],
+  activeLineupId: null,
   lineup: null,
   lineupPlayers: [],
   staff: [],
@@ -730,7 +747,7 @@ async function init(){
   loadClubSettings();
   loadMembers();
   loadPlayers();
-  loadFormations().then(loadLineup).then(loadLineupPlayers);
+  loadFormations().then(loadLineups).then(loadLineupPlayers);
   loadStaff();
   loadMatchSquad().then(loadMatchSquadPlayers);
 
@@ -751,7 +768,7 @@ async function init(){
     .on('postgres_changes', { event: '*', schema: 'public', table: 'formations' }, loadFormations)
     .subscribe();
   sb.channel('realtime:lineups')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineups' }, loadLineup)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineups' }, loadLineups)
     .subscribe();
   sb.channel('realtime:lineup_players')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'lineup_players' }, loadLineupPlayers)
@@ -778,6 +795,7 @@ async function loadProfile(userId){
    ====================================================================== */
 function bindStaticEvents(){
   bindConfirmDialog();
+  bindPromptDialog();
 
   $$('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -820,6 +838,10 @@ function bindStaticEvents(){
 
   $('#formationSelect').addEventListener('change', onFormationChange);
   $('#displayModeSelect').addEventListener('change', onDisplayModeChange);
+  $('#lineupSelect').addEventListener('change', onLineupSelectChange);
+  $('#newLineupBtn').addEventListener('click', newLineup);
+  $('#clearLineupBtn').addEventListener('click', clearLineup);
+  $('#deleteLineupBtn').addEventListener('click', deleteLineup);
 
   $('#pitch').addEventListener('dragover', (e) => e.preventDefault());
   $('#pitch').addEventListener('drop', (e) => {
@@ -950,8 +972,9 @@ function openModal(id){ $('#' + id).classList.add('show'); }
 function closeModal(id){ $('#' + id).classList.remove('show'); }
 
 let _confirmResolve = null;
-function confirmDialog(message){
+function confirmDialog(message, okLabel){
   $('#confirmMessage').textContent = message;
+  $('#confirmOkBtn').textContent = okLabel || 'Delete';
   openModal('confirmModal');
   return new Promise((resolve) => { _confirmResolve = resolve; });
 }
@@ -963,6 +986,30 @@ function bindConfirmDialog(){
   $('#confirmOkBtn').addEventListener('click', () => {
     closeModal('confirmModal');
     if(_confirmResolve){ _confirmResolve(true); _confirmResolve = null; }
+  });
+}
+
+let _promptResolve = null;
+function promptDialog(title, placeholder){
+  $('#promptTitle').textContent = title;
+  $('#promptInput').value = '';
+  $('#promptInput').placeholder = placeholder || '';
+  openModal('promptModal');
+  setTimeout(() => $('#promptInput').focus(), 50);
+  return new Promise((resolve) => { _promptResolve = resolve; });
+}
+function bindPromptDialog(){
+  $('#promptCancelBtn').addEventListener('click', () => {
+    closeModal('promptModal');
+    if(_promptResolve){ _promptResolve(null); _promptResolve = null; }
+  });
+  $('#promptOkBtn').addEventListener('click', () => {
+    const val = $('#promptInput').value.trim();
+    closeModal('promptModal');
+    if(_promptResolve){ _promptResolve(val || null); _promptResolve = null; }
+  });
+  $('#promptInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') $('#promptOkBtn').click();
   });
 }
 
@@ -1273,30 +1320,87 @@ async function loadFormations(){
   renderPitch();
 }
 
-async function loadLineup(){
+async function loadLineups(){
   if(!isConfigured) return;
-  let { data, error } = await sb.from('lineups').select('*').eq('id', CURRENT_LINEUP_ID).maybeSingle();
-  if(error){ console.error(error); toast('Could not load lineup: ' + error.message, true); return; }
+  const { data, error } = await sb.from('lineups').select('*').order('created_at', { ascending: true });
+  if(error){ console.error(error); toast('Could not load lineups: ' + error.message, true); return; }
 
-  if(!data){
+  state.savedLineups = data || [];
+
+  if(!state.savedLineups.length){
     const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
-    const inserted = await sb.from('lineups')
-      .upsert({ id: CURRENT_LINEUP_ID, name: 'Current lineup', formation_id: defaultFormation, display_mode: 'photo_number_name' })
+    const { data: created, error: createError } = await sb.from('lineups')
+      .insert({ name: 'Default lineup', formation_id: defaultFormation, display_mode: 'photo_number_name' })
       .select().single();
-    data = inserted.data;
+    if(createError){ console.error(createError); toast('Could not create a default lineup: ' + createError.message, true); return; }
+    state.savedLineups = [created];
   }
 
-  state.lineup = data;
-  if(data){
-    $('#formationSelect').value = data.formation_id;
-    $('#displayModeSelect').value = data.display_mode;
+  if(!state.activeLineupId || !state.savedLineups.find(l => l.id === state.activeLineupId)){
+    state.activeLineupId = state.savedLineups[0].id;
+  }
+
+  state.lineup = state.savedLineups.find(l => l.id === state.activeLineupId) || null;
+
+  $('#lineupSelect').innerHTML = state.savedLineups.map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
+  $('#lineupSelect').value = state.activeLineupId;
+
+  if(state.lineup){
+    $('#formationSelect').value = state.lineup.formation_id;
+    $('#displayModeSelect').value = state.lineup.display_mode;
   }
   renderPitch();
 }
 
+async function onLineupSelectChange(e){
+  state.activeLineupId = e.target.value;
+  state.lineup = state.savedLineups.find(l => l.id === state.activeLineupId) || null;
+  if(state.lineup){
+    $('#formationSelect').value = state.lineup.formation_id;
+    $('#displayModeSelect').value = state.lineup.display_mode;
+  }
+  await loadLineupPlayers();
+}
+
+async function newLineup(){
+  const name = await promptDialog('Name this lineup', 'e.g. vs AEK — Home');
+  if(!name) return;
+  const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
+  const { data, error } = await sb.from('lineups')
+    .insert({ name, formation_id: defaultFormation, display_mode: 'photo_number_name' })
+    .select().single();
+  if(error){ toast(error.message, true); return; }
+  state.activeLineupId = data.id;
+  await loadLineups();
+  await loadLineupPlayers();
+  toast('New lineup created');
+}
+
+async function clearLineup(){
+  if(!state.activeLineupId) return;
+  if(!(await confirmDialog('Clear this lineup? Every player returns to the bench.', 'Clear'))) return;
+  await sb.from('lineup_players').delete().eq('lineup_id', state.activeLineupId);
+  await loadLineupPlayers();
+  toast('Lineup cleared');
+}
+
+async function deleteLineup(){
+  if(!state.activeLineupId) return;
+  if(state.savedLineups.length <= 1){
+    toast('You need to keep at least one lineup.', true);
+    return;
+  }
+  if(!(await confirmDialog('Delete this saved lineup? This cannot be undone.', 'Delete'))) return;
+  await sb.from('lineups').delete().eq('id', state.activeLineupId);
+  state.activeLineupId = null;
+  await loadLineups();
+  await loadLineupPlayers();
+  toast('Lineup deleted');
+}
+
 async function loadLineupPlayers(){
-  if(!isConfigured || !state.lineup) return;
-  const { data, error } = await sb.from('lineup_players').select('*').eq('lineup_id', CURRENT_LINEUP_ID);
+  if(!isConfigured || !state.activeLineupId) return;
+  const { data, error } = await sb.from('lineup_players').select('*').eq('lineup_id', state.activeLineupId);
   if(error){ console.error(error); toast('Could not load lineup players: ' + error.message, true); return; }
   state.lineupPlayers = data || [];
   renderPitch();
@@ -1336,6 +1440,11 @@ function renderPitch(){
 
   const mode = state.lineup?.display_mode || 'photo_number_name';
   const editable = isEditor();
+  $('#newLineupBtn').style.display = editable ? 'inline-flex' : 'none';
+  $('#clearLineupBtn').style.display = editable ? 'inline-flex' : 'none';
+  $('#deleteLineupBtn').style.display = editable ? 'inline-flex' : 'none';
+  $('#formationSelect').disabled = !editable;
+  $('#displayModeSelect').disabled = !editable;
   const bySlot = {};
   state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
 
@@ -1465,7 +1574,7 @@ async function assignOrMove(playerId, source, targetSlotId){
   if(existingRow){
     await sb.from('lineup_players').update({ slot_id: targetSlotId, is_starting: true }).eq('id', existingRow.id);
   }else{
-    await sb.from('lineup_players').insert({ lineup_id: CURRENT_LINEUP_ID, player_id: playerId, slot_id: targetSlotId, is_starting: true });
+    await sb.from('lineup_players').insert({ lineup_id: state.activeLineupId, player_id: playerId, slot_id: targetSlotId, is_starting: true });
   }
 
   await loadLineupPlayers();
@@ -1473,7 +1582,7 @@ async function assignOrMove(playerId, source, targetSlotId){
 
 async function onFormationChange(e){
   const formationId = e.target.value;
-  await sb.from('lineups').update({ formation_id: formationId }).eq('id', CURRENT_LINEUP_ID);
+  await sb.from('lineups').update({ formation_id: formationId }).eq('id', state.activeLineupId);
 
   const formation = state.formations.find(f => f.id === formationId);
   const validSlotIds = new Set((formation?.slots || []).map(s => s.id));
@@ -1482,13 +1591,14 @@ async function onFormationChange(e){
     await sb.from('lineup_players').delete().eq('id', lp.id);
   }
 
-  await loadLineup();
+  await loadLineups();
   await loadLineupPlayers();
   toast('Formation changed');
 }
 
 async function onDisplayModeChange(e){
-  await sb.from('lineups').update({ display_mode: e.target.value }).eq('id', CURRENT_LINEUP_ID);
+  await sb.from('lineups').update({ display_mode: e.target.value }).eq('id', state.activeLineupId);
+  await loadLineups();
 }
 
 /* ======================================================================
