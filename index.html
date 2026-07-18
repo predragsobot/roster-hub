@@ -235,6 +235,10 @@
   .squad-row .stag{font-size:11px;color:var(--muted);margin-top:1px;}
   .tag-warn{color:#e0a13f;border-color:rgba(224,161,63,.4);background:rgba(224,161,63,.12);}
 
+  .export-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);cursor:pointer;user-select:none;}
+  .chk input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
+
   #exportSheet{position:fixed;top:0;left:-9999px;width:1240px;
     background:linear-gradient(160deg,#0c1a2e,#0a1420 65%);color:#eef3fb;
     padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
@@ -261,7 +265,7 @@
   .ex-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;}
   .ex-slot-circle{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
     display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;
-    border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);}
+    border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);overflow:hidden;}
   .ex-slot-empty{width:52px;height:52px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
     display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:rgba(255,255,255,.4);}
   .ex-slot-label{font-size:10.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:2px 9px;
@@ -277,7 +281,7 @@
   .ex-subs-sub{font-size:11px;color:rgba(255,255,255,.42);margin-bottom:12px;}
   .ex-sub-row{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06);}
   .ex-sub-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#3ec6ff,#1c6fd6);
-    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
   .ex-sub-name{flex:1;font-size:12.5px;font-weight:700;}
   .ex-sub-pos{font-size:10.5px;color:rgba(255,255,255,.45);}
   .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);}
@@ -428,6 +432,13 @@
       <div class="card">
         <h2>Export</h2>
         <p class="sub">Club logo, match squad, starting XI, formation, substitutes and staff — ready to share or print.</p>
+        <div class="export-options">
+          <label class="chk"><input type="checkbox" id="optPhotos" checked> Player photos</label>
+          <label class="chk"><input type="checkbox" id="optNumbers" checked> Shirt numbers</label>
+          <label class="chk"><input type="checkbox" id="optNames" checked> Player names</label>
+          <label class="chk"><input type="checkbox" id="optSubs" checked> Include substitutes</label>
+          <label class="chk"><input type="checkbox" id="optStaff" checked> Include staff</label>
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-secondary btn-sm" id="exportPdfBtn">⬇ Export PDF</button>
           <button class="btn btn-secondary btn-sm" id="exportPngBtn">⬇ Export PNG</button>
@@ -1704,6 +1715,12 @@ async function uploadOpponentLogo(file){
    12) EXPORT — PDF, PNG, Print
    ====================================================================== */
 function buildExportSheet(){
+  const optPhotos = $('#optPhotos').checked;
+  const optNumbers = $('#optNumbers').checked;
+  const optNames = $('#optNames').checked;
+  const optSubs = $('#optSubs').checked;
+  const optStaff = $('#optStaff').checked;
+
   const squadPlayerIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
   const squadPlayers = state.players.filter(p => squadPlayerIds.has(p.id));
   const startingIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
@@ -1718,6 +1735,22 @@ function buildExportSheet(){
     ? new Date(state.matchSquad.match_date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 
+  function slotVisual(player){
+    const showPhoto = optPhotos && player.photo_url;
+    let circleHtml;
+    if(showPhoto) circleHtml = `<img src="${player.photo_url}" crossorigin="anonymous" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+    else if(optNumbers) circleHtml = player.shirt_number ?? '';
+    else if(optNames) circleHtml = (player.last_name || '?')[0];
+    else circleHtml = '';
+
+    let labelHtml = '';
+    const bits = [];
+    if(optNumbers && showPhoto) bits.push(player.shirt_number ?? '');
+    if(optNames) bits.push(player.last_name);
+    if(bits.filter(Boolean).length) labelHtml = `<div class="ex-slot-label">${escapeHtml(bits.filter(Boolean).join(' · '))}</div>`;
+    return { circleHtml, labelHtml };
+  }
+
   const bySlot = {};
   state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
 
@@ -1725,9 +1758,10 @@ function buildExportSheet(){
     const lp = bySlot[slot.id];
     const player = lp ? state.players.find(p => p.id === lp.player_id) : null;
     if(player){
+      const { circleHtml, labelHtml } = slotVisual(player);
       return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
-        <div class="ex-slot-circle">${player.shirt_number ?? ''}</div>
-        <div class="ex-slot-label">${escapeHtml(player.last_name)}</div>
+        <div class="ex-slot-circle">${circleHtml}</div>
+        ${labelHtml}
       </div>`;
     }
     return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
@@ -1735,13 +1769,41 @@ function buildExportSheet(){
     </div>`;
   }).join('');
 
-  const subRow = (p) => `
-    <div class="ex-sub-row">
-      <div class="ex-sub-num">${p.shirt_number ?? ''}</div>
-      <div class="ex-sub-name">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
+  const subRow = (p) => {
+    const showPhoto = optPhotos && p.photo_url;
+    const avatarInner = showPhoto
+      ? `<img src="${p.photo_url}" crossorigin="anonymous" alt="" style="width:100%;height:100%;object-fit:cover;">`
+      : (optNumbers ? (p.shirt_number ?? '') : (p.last_name || '?')[0]);
+    const nameText = optNames ? `${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}` : '&nbsp;';
+    return `<div class="ex-sub-row">
+      <div class="ex-sub-num">${avatarInner}</div>
+      <div class="ex-sub-name">${nameText}</div>
       <div class="ex-sub-pos">${p.primary_position}</div>
     </div>`;
+  };
   const staffRow = (s) => `<div class="ex-staff-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
+
+  const showSubsPanel = optSubs || optStaff;
+  let panelInner = '';
+  if(optSubs){
+    panelInner += `
+      <div class="ex-subs-head">
+        <div class="ex-subs-title">Substitutes</div>
+        <div class="ex-subs-count">${subPlayers.length}</div>
+      </div>
+      <div class="ex-subs-sub">Match squad bench</div>
+      ${subPlayers.length ? subPlayers.map(subRow).join('') : '<p style="color:rgba(255,255,255,.4);font-size:12px;">No substitutes selected.</p>'}
+    `;
+  }
+  if(optStaff){
+    panelInner += `
+      <div class="ex-staff-block">
+        <div class="ex-subs-title" style="margin-bottom:8px;">Staff</div>
+        ${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-staff-row"><span>—</span></div>'}
+      </div>
+    `;
+  }
+  panelInner += `<div class="ex-footer-tag">Generated ${new Date().toLocaleDateString()}</div>`;
 
   $('#exportSheet').innerHTML = `
     <div class="ex-topbar">
@@ -1762,20 +1824,8 @@ function buildExportSheet(){
     <div class="ex-datestr">${dateStr}</div>
 
     <div class="ex-body">
-      <div class="ex-pitch-panel">${slotsHtml}</div>
-      <div class="ex-subs-panel">
-        <div class="ex-subs-head">
-          <div class="ex-subs-title">Substitutes</div>
-          <div class="ex-subs-count">${subPlayers.length}</div>
-        </div>
-        <div class="ex-subs-sub">Match squad bench</div>
-        ${subPlayers.length ? subPlayers.map(subRow).join('') : '<p style="color:rgba(255,255,255,.4);font-size:12px;">No substitutes selected.</p>'}
-        <div class="ex-staff-block">
-          <div class="ex-subs-title" style="margin-bottom:8px;">Staff</div>
-          ${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-staff-row"><span>—</span></div>'}
-        </div>
-        <div class="ex-footer-tag">Generated ${new Date().toLocaleDateString()}</div>
-      </div>
+      <div class="ex-pitch-panel" style="${showSubsPanel ? '' : 'flex:1;'}">${slotsHtml}</div>
+      ${showSubsPanel ? `<div class="ex-subs-panel">${panelInner}</div>` : ''}
     </div>
   `;
 }
