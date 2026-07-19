@@ -160,8 +160,8 @@
   .sp-markings .sp-spot{fill:currentColor;stroke:none;}
 
   .sp-arrow-line{fill:none;stroke-linecap:round;}
-  .sp-arrow-solid{stroke:#fff;stroke-width:.55;}
-  .sp-arrow-dashed{stroke:#ffd23f;stroke-width:.55;stroke-dasharray:2.2,1.6;}
+  .sp-arrow-solid{stroke:#fff;stroke-width:.28;}
+  .sp-arrow-dashed{stroke:#ffd23f;stroke-width:.28;stroke-dasharray:1.6,1.3;}
 
   .sp-tokens{position:absolute;inset:0;}
   .sp-token{position:absolute;transform:translate(-50%,-50%);width:11%;aspect-ratio:1;min-width:34px;max-width:52px;
@@ -222,6 +222,8 @@
     --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
     --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
     --ex-token-bg:#1c6fd6;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+    --ex-pitch-bg:repeating-linear-gradient(to bottom,#163a24 0 11%,#123120 11% 22%);
+    --ex-pitch-line:rgba(255,255,255,.45);--ex-pitch-border:rgba(255,255,255,.15);
     background:linear-gradient(160deg,var(--ex-bg1),var(--ex-bg2) 65%);color:var(--ex-text);
     padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
   #exportSheet[data-theme="white"]{
@@ -229,6 +231,7 @@
     --ex-accent:#1c6fd6;--ex-chip-bg:#eef2f5;--ex-chip-border:#dde3ec;
     --ex-badge-bg:#eef2f5;--ex-badge-border:#dde3ec;--ex-panel-bg:#f7f9f8;--ex-panel-border:#e3e8e4;
     --ex-token-bg:#1c6fd6;--ex-token-border:#12151c;--ex-line:rgba(0,0,0,.35);
+    --ex-pitch-bg:#ffffff;--ex-pitch-line:#0c1a2e;--ex-pitch-border:#c7cdd6;
   }
   #exportSheet[data-theme="blue"]{
     --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
@@ -236,6 +239,8 @@
     --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
     --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
     --ex-token-bg:#3ec6ff;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+    --ex-pitch-bg:repeating-linear-gradient(to bottom,#163a24 0 11%,#123120 11% 22%);
+    --ex-pitch-line:rgba(255,255,255,.45);--ex-pitch-border:rgba(255,255,255,.15);
   }
   #exportSheet[data-theme="gray"]{
     --ex-bg1:#33363d;--ex-bg2:#24262b;--ex-text:#f1f2f4;--ex-muted:rgba(255,255,255,.5);--ex-muted2:rgba(255,255,255,.35);
@@ -243,6 +248,8 @@
     --ex-badge-bg:rgba(255,255,255,.07);--ex-badge-border:rgba(255,255,255,.16);
     --ex-panel-bg:rgba(255,255,255,.04);--ex-panel-border:rgba(255,255,255,.12);
     --ex-token-bg:#9aa1ac;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+    --ex-pitch-bg:repeating-linear-gradient(to bottom,#163a24 0 11%,#123120 11% 22%);
+    --ex-pitch-line:rgba(255,255,255,.45);--ex-pitch-border:rgba(255,255,255,.15);
   }
   .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:10px;}
   .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
@@ -258,19 +265,24 @@
   .ex-panel-head{margin-bottom:12px;}
   .ex-panel-title{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
   .ex-panel-notes{font-size:12.5px;color:var(--ex-muted);margin-top:6px;line-height:1.5;}
-  .ex-pitch{position:relative;width:100%;aspect-ratio:68/60;border-radius:14px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.15);background:repeating-linear-gradient(to bottom,#163a24 0 11%,#123120 11% 22%);}
-  .ex-token{position:absolute;transform:translate(-50%,-50%);width:9.5%;aspect-ratio:1;border-radius:50%;
+  /* .ex-pitch and .ex-token width/height are set inline (px) by JS at export time — deliberately
+     not using CSS aspect-ratio here, since html2canvas does not reliably support it and was
+     cutting tokens/photos off. */
+  .ex-pitch{position:relative;border-radius:14px;overflow:hidden;
+    border:1px solid var(--ex-pitch-border);background:var(--ex-pitch-bg);}
+  .ex-token{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
     background:var(--ex-token-bg);border:2.5px solid var(--ex-token-border);display:flex;align-items:center;
-    justify-content:center;overflow:hidden;font-size:14px;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);}
-  .ex-token img{width:100%;height:100%;object-fit:cover;}
-  .ex-token-label{position:absolute;top:100%;left:50%;transform:translate(-50%,3px);font-size:10px;font-weight:700;
-    color:#fff;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:5px;white-space:nowrap;}
+    justify-content:center;overflow:hidden;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+  .ex-token img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ex-token-label{position:absolute;top:100%;left:50%;transform:translate(-50%,4px);font-weight:800;
+    color:#fff;background:rgba(0,0,0,.65);padding:2px 7px;border-radius:5px;white-space:nowrap;}
   .ex-footer-tag{margin-top:14px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ex-muted2);}
 
   @media print{
+    @page{ size: landscape; margin: 8mm; }
     body > *:not(#exportSheet){display:none !important;}
-    #exportSheet{position:static !important;left:auto !important;width:100% !important;border-radius:0 !important;}
+    #exportSheet{position:static !important;left:auto !important;width:100% !important;border-radius:0 !important;
+      page-break-inside:avoid;}
   }
 
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
@@ -278,6 +290,7 @@
 </style>
 </head>
 <body>
+
 <div class="app-shell">
 
   <header class="topbar">
@@ -350,8 +363,8 @@
                 <svg class="sp-markings" id="spMarkings" viewBox="0 0 68 60"></svg>
                 <svg class="sp-arrows" id="spArrows" viewBox="0 0 68 60">
                   <defs>
-                    <marker id="arrowhead" markerWidth="3" markerHeight="3" refX="2.4" refY="1.5" orient="auto">
-                      <path d="M0,0 L3,1.5 L0,3 z" fill="currentColor"></path>
+                    <marker id="arrowhead" markerWidth="2" markerHeight="2" refX="1.6" refY="1" orient="auto">
+                      <path d="M0,0 L2,1 L0,2 z" fill="currentColor"></path>
                     </marker>
                   </defs>
                 </svg>
@@ -570,12 +583,20 @@ function emptyBoard(overrides){
     orientation: 'bottom', notes: '', tokens: [], arrows: [],
   }, overrides || {});
 }
+let _autosaveTimer = null;
 function markDirty(){
   state.dirty = true;
   $('#dirtyDot').classList.add('show');
+  // Safety net: auto-persist a few seconds after the last edit, in case the
+  // person navigates away or closes the tab before pressing Save themselves.
+  if(state.board?.id && isEditor()){
+    clearTimeout(_autosaveTimer);
+    _autosaveTimer = setTimeout(() => { if(state.dirty) saveBoard(true); }, 2000);
+  }
 }
 function clearDirty(){
   state.dirty = false;
+  clearTimeout(_autosaveTimer);
   $('#dirtyDot').classList.remove('show');
 }
 
@@ -667,6 +688,11 @@ async function loadBoards(preserveSelection){
   if(preserveSelection && state.board?.id){
     const fresh = state.boards.find(b => b.id === state.board.id);
     if(fresh && !state.dirty) applyBoardToEditor(fresh);
+  }else if(!state.board && state.boards.length){
+    // Nothing selected yet (e.g. fresh page load) — open the most recently
+    // saved variant automatically instead of showing an empty board.
+    const mostRecent = [...state.boards].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
+    applyBoardToEditor(mostRecent);
   }
 }
 
@@ -994,9 +1020,9 @@ async function deleteBoard(){
   toast('Variant deleted');
 }
 
-async function saveBoard(){
+async function saveBoard(silent){
   if(!state.board) return;
-  if(!isEditor()){ toast('Only editors can save.', true); return; }
+  if(!isEditor()){ if(!silent) toast('Only editors can save.', true); return; }
   const payload = {
     name: state.board.name,
     category: state.board.category,
@@ -1007,10 +1033,10 @@ async function saveBoard(){
     arrows: state.board.arrows,
   };
   const { error } = await sb.from('set_piece_boards').update(payload).eq('id', state.board.id);
-  if(error){ toast(error.message, true); return; }
+  if(error){ if(!silent) toast(error.message, true); return; }
   clearDirty();
   await loadBoards(true);
-  toast('Saved');
+  if(!silent) toast('Saved');
 }
 
 /* ======================================================================
@@ -1249,43 +1275,52 @@ function bindPitchInteractions(){
 /* ======================================================================
    13) EXPORT
    ====================================================================== */
-function exportPitchPanel(board){
+function exportPitchPanel(board, pitchWidthPx){
   const opts = {
     photos: $('#optPhotos').checked,
     numbers: $('#optNumbers').checked,
     names: $('#optNames').checked,
     arrows: $('#optArrows').checked,
   };
+
+  const pitchHeightPx = pitchWidthPx * (60 / 68);
+  const tokenSizePx = Math.round(pitchWidthPx * 0.072);   // smaller player circles/photos
+  const labelFontPx = Math.max(12, Math.round(pitchWidthPx * 0.019)); // bigger, more legible names
+  const numFontPx = Math.round(tokenSizePx * 0.42);
+  const strokeW = (pitchWidthPx * 0.0035).toFixed(2);      // thinner pitch lines, scales with size
+  const arrowStrokeW = (pitchWidthPx * 0.0028).toFixed(2); // thinner arrows
+
   const tokensHtml = (board.tokens || []).map(t => {
     const p = findPlayer(t.player_id);
     const showPhoto = opts.photos && p?.photo_url;
     let inner;
     if(showPhoto) inner = `<img src="${p.photo_url}" crossorigin="anonymous" alt="">`;
-    else if(opts.numbers) inner = p?.shirt_number ?? (p ? playerInitial(p) : '?');
-    else if(opts.names) inner = p ? playerInitial(p) : '?';
+    else if(opts.numbers) inner = `<span style="font-size:${numFontPx}px;">${p?.shirt_number ?? (p ? playerInitial(p) : '?')}</span>`;
+    else if(opts.names) inner = `<span style="font-size:${numFontPx}px;">${p ? playerInitial(p) : '?'}</span>`;
     else inner = '';
-    const label = (opts.names && p) ? `<div class="ex-token-label">${escapeHtml(p.last_name)}</div>` : '';
-    return `<div class="ex-token" style="left:${t.x}%;top:${t.y}%;">${inner}${label}</div>`;
+    const label = (opts.names && p)
+      ? `<div class="ex-token-label" style="font-size:${labelFontPx}px;">${escapeHtml(p.last_name)}</div>` : '';
+    return `<div class="ex-token" style="left:${t.x}%;top:${t.y}%;width:${tokenSizePx}px;height:${tokenSizePx}px;">${inner}${label}</div>`;
   }).join('');
 
   const arrowsSvg = opts.arrows ? `
     <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 68 60">
-      <defs><marker id="exArrowhead-${board.id || 'x'}" markerWidth="3" markerHeight="3" refX="2.4" refY="1.5" orient="auto">
-        <path d="M0,0 L3,1.5 L0,3 z" fill="currentColor"></path>
+      <defs><marker id="exArrowhead-${board.id || 'x'}" markerWidth="1.8" markerHeight="1.8" refX="1.5" refY="0.9" orient="auto">
+        <path d="M0,0 L1.8,0.9 L0,1.8 z" fill="currentColor"></path>
       </marker></defs>
       <g style="color:var(--ex-line);">
         ${(board.arrows || []).map(a => `
           <line x1="${a.x1/100*68}" y1="${a.y1/100*60}" x2="${a.x2/100*68}" y2="${a.y2/100*60}"
-            stroke="currentColor" stroke-width="0.55" stroke-linecap="round"
-            ${a.style === 'dashed' ? 'stroke-dasharray="2.2,1.6"' : ''}
+            stroke="currentColor" stroke-width="0.22" stroke-linecap="round"
+            ${a.style === 'dashed' ? 'stroke-dasharray="1.5,1.2"' : ''}
             marker-end="url(#exArrowhead-${board.id || 'x'})"></line>
         `).join('')}
       </g>
     </svg>` : '';
 
   const markingsSvg = `
-    <svg style="position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.35);" viewBox="0 0 68 60">
-      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,60)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.35;">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;color:var(--ex-pitch-line);" viewBox="0 0 68 60">
+      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,60)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.4;">
         ${MARKINGS_INNER}
       </g>
     </svg>`;
@@ -1297,7 +1332,7 @@ function exportPitchPanel(board){
         <div class="ex-panel-title">${escapeHtml(board.name)}</div>
         ${board.notes ? `<div class="ex-panel-notes">${escapeHtml(board.notes)}</div>` : ''}
       </div>
-      <div class="ex-pitch">
+      <div class="ex-pitch" style="width:${pitchWidthPx}px;height:${pitchHeightPx}px;">
         ${markingsSvg}
         ${arrowsSvg}
         ${tokensHtml}
@@ -1310,6 +1345,15 @@ function buildExportSheet(){
   const theme = $('#exportTheme').value;
   const secondaryId = $('#secondaryBoardSelect').value;
   const secondary = secondaryId ? state.boards.find(b => b.id === secondaryId) : null;
+  const panelCount = secondary ? 2 : 1;
+
+  // Sheet is a fixed 1500px wide off-screen canvas (for crisp html2canvas capture).
+  // Compute exact pixel widths here rather than relying on CSS aspect-ratio, which
+  // html2canvas does not reliably support and was cutting tokens/photos in half.
+  const SHEET_WIDTH = 1500, SHEET_PAD = 34, PANEL_PAD = 18, PANEL_GAP = 22;
+  const contentWidth = SHEET_WIDTH - SHEET_PAD * 2;
+  const panelOuterWidth = panelCount === 2 ? (contentWidth - PANEL_GAP) / 2 : contentWidth;
+  const pitchWidthPx = Math.round(panelOuterWidth - PANEL_PAD * 2);
 
   const clubName = state.club?.club_name || 'My Club';
   const clubLogo = state.club?.club_logo_url;
@@ -1327,8 +1371,8 @@ function buildExportSheet(){
       <div class="ex-genstamp">Generated ${dateStr}</div>
     </div>
     <div class="ex-panels">
-      ${exportPitchPanel(state.board)}
-      ${secondary ? exportPitchPanel(secondary) : ''}
+      ${exportPitchPanel(state.board, pitchWidthPx)}
+      ${secondary ? exportPitchPanel(secondary, pitchWidthPx) : ''}
     </div>
     <div class="ex-footer-tag">Set Pieces</div>
   `;
@@ -1340,12 +1384,31 @@ function exportBgFor(theme){
   return '#0c1a2e';
 }
 
+function waitForImages(container){
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if(!imgs.length) return Promise.resolve();
+  return Promise.all(imgs.map(img => {
+    if(img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(resolve => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+      setTimeout(resolve, 4000); // safety timeout so a slow/broken image never blocks export
+    });
+  }));
+}
+
+async function captureExportSheet(){
+  buildExportSheet();
+  const sheet = $('#exportSheet');
+  await waitForImages(sheet);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); // let layout settle
+  return html2canvas(sheet, { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
+}
+
 async function exportPNG(){
   if(!state.board){ toast('Select a variant first.', true); return; }
   try{
-    buildExportSheet();
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
+    const canvas = await captureExportSheet();
     const link = document.createElement('a');
     link.download = (state.board.name || 'set-piece').toLowerCase().replace(/\s+/g, '-') + '.png';
     link.href = canvas.toDataURL('image/png');
@@ -1356,9 +1419,7 @@ async function exportPNG(){
 async function exportPDF(){
   if(!state.board){ toast('Select a variant first.', true); return; }
   try{
-    buildExportSheet();
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
+    const canvas = await captureExportSheet();
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('l', 'mm', 'a4');
@@ -1378,7 +1439,7 @@ async function exportPDF(){
 function printBoard(){
   if(!state.board){ toast('Select a variant first.', true); return; }
   buildExportSheet();
-  setTimeout(() => window.print(), 60);
+  waitForImages($('#exportSheet')).then(() => setTimeout(() => window.print(), 60));
 }
 
 init();
