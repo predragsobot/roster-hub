@@ -239,7 +239,7 @@
   .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);cursor:pointer;user-select:none;}
   .chk input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
 
-  #exportSheet{position:fixed;top:0;left:-9999px;width:1240px;
+  #exportSheet{position:fixed;top:0;left:-9999px;width:1400px;
     --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
     --ex-accent:#5fb3ff;--ex-circle1:#3ec6ff;--ex-circle2:#1c6fd6;
     --ex-chip-bg:#0e1c30;--ex-chip-border:rgba(255,255,255,.15);--ex-vs-color:rgba(255,255,255,.32);
@@ -271,47 +271,47 @@
 
   .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:6px;}
   .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
-  .ex-club-logo,.ex-opponent-logo{width:56px;height:56px;border-radius:50%;object-fit:contain;flex-shrink:0;
+  .ex-club-logo,.ex-opponent-logo{width:64px;height:64px;border-radius:50%;object-fit:contain;flex-shrink:0;
     background:var(--ex-chip-bg);border:2px solid var(--ex-chip-border);}
-  .ex-eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ex-accent);font-weight:700;}
-  .ex-team-name{font-size:21px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;color:var(--ex-text);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
-  .ex-vs{font-size:13px;font-weight:800;color:var(--ex-vs-color);padding:0 14px;flex-shrink:0;}
+  .ex-eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ex-accent);font-weight:700;}
+  .ex-team-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;color:var(--ex-text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;}
+  .ex-vs{font-size:14px;font-weight:800;color:var(--ex-vs-color);padding:0 16px;flex-shrink:0;}
   .ex-opponent{display:flex;align-items:center;gap:14px;flex-direction:row-reverse;text-align:right;min-width:0;}
   .ex-spacer{flex:1;}
   .ex-formation-badge{background:var(--ex-badge-bg);border:1px solid var(--ex-badge-border);border-radius:13px;
-    padding:9px 20px;text-align:center;flex-shrink:0;}
-  .ex-formation-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
-  .ex-datestr{font-size:11.5px;color:var(--ex-muted);margin:14px 0 20px;}
+    padding:10px 22px;text-align:center;flex-shrink:0;}
+  .ex-formation-name{font-size:28px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
+  .ex-datestr{font-size:12.5px;color:var(--ex-muted);margin:14px 0 20px;}
 
   .ex-body{display:flex;gap:20px;}
-  .ex-pitch-panel{flex:1.35;position:relative;aspect-ratio:68/86;border-radius:16px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.1);
+  .ex-pitch-panel{flex:1.35;position:relative;overflow:hidden;
+    border-radius:16px;border:1px solid rgba(255,255,255,.1);
     background:repeating-linear-gradient(to bottom,#163a24 0 12.5%,#123120 12.5% 25%);}
   .ex-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;}
-  .ex-slot-circle{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
-    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:#fff;
-    border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);overflow:hidden;}
-  .ex-slot-empty{width:52px;height:52px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
-    display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:rgba(255,255,255,.4);}
-  .ex-slot-label{font-size:10.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:2px 9px;
-    border-radius:6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+  .ex-slot-circle{width:88px;height:88px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
+    display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#fff;
+    border:3px solid rgba(255,255,255,.55);box-shadow:0 5px 14px rgba(0,0,0,.4);overflow:hidden;}
+  .ex-slot-empty{width:88px;height:88px;border-radius:50%;border:3px dashed rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:rgba(255,255,255,.4);}
+  .ex-slot-label{font-size:15px;font-weight:800;color:#fff;background:rgba(0,0,0,.6);padding:4px 12px;
+    border-radius:7px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;}
 
   .ex-subs-panel{flex:1;background:var(--ex-panel-bg);border:1px solid var(--ex-panel-border);
     border-radius:16px;padding:20px;display:flex;flex-direction:column;}
   .ex-subs-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
-  .ex-subs-title{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ex-accent);}
-  .ex-subs-count{width:32px;height:32px;border-radius:50%;background:var(--ex-count-bg);
+  .ex-subs-title{font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ex-accent);}
+  .ex-subs-count{width:38px;height:38px;border-radius:50%;background:var(--ex-count-bg);
     border:1px solid var(--ex-count-border);display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:14px;flex-shrink:0;color:var(--ex-text);}
-  .ex-subs-sub{font-size:11px;color:var(--ex-muted2);margin-bottom:12px;}
-  .ex-sub-row{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid var(--ex-divider);}
-  .ex-sub-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
-    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
-  .ex-sub-name{flex:1;font-size:12.5px;font-weight:700;color:var(--ex-text);}
-  .ex-sub-pos{font-size:10.5px;color:var(--ex-muted);}
+    font-weight:800;font-size:16px;flex-shrink:0;color:var(--ex-text);}
+  .ex-subs-sub{font-size:12px;color:var(--ex-muted2);margin-bottom:12px;}
+  .ex-sub-row{display:flex;align-items:center;gap:14px;padding:10px 2px;border-bottom:1px solid var(--ex-divider);}
+  .ex-sub-num{width:44px;height:44px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
+    display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
+  .ex-sub-name{flex:1;font-size:16px;font-weight:700;color:var(--ex-text);}
+  .ex-sub-pos{font-size:13px;color:var(--ex-muted);}
   .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid var(--ex-divider2);}
-  .ex-staff-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:var(--ex-text);opacity:.85;}
+  .ex-staff-row{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;color:var(--ex-text);opacity:.85;}
   .ex-staff-row span:last-child{color:var(--ex-muted);opacity:1;}
   .ex-footer-tag{margin-top:auto;padding-top:12px;text-align:center;font-size:10px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--ex-muted2);}
@@ -1928,6 +1928,12 @@ function buildExportSheet(){
   const staffRow = (s) => `<div class="ex-staff-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
 
   const showSubsPanel = optSubs || optStaff;
+
+  const bodyWidth = 1400 - 68; // sheet width minus left/right padding
+  const gap = 20;
+  const pitchWidthEstimate = showSubsPanel ? ((bodyWidth - gap) * 1.35) / 2.35 : bodyWidth;
+  const pitchHeight = Math.round(pitchWidthEstimate * 1.05);
+
   let panelInner = '';
   if(optSubs){
     panelInner += `
@@ -1970,7 +1976,7 @@ function buildExportSheet(){
     <div class="ex-datestr">${dateStr}</div>
 
     <div class="ex-body">
-      <div class="ex-pitch-panel" style="${showSubsPanel ? '' : 'flex:1;'}">${slotsHtml}</div>
+      <div class="ex-pitch-panel" style="height:${pitchHeight}px;${showSubsPanel ? '' : 'flex:1;'}">${PITCH_MARKINGS}${slotsHtml}</div>
       ${showSubsPanel ? `<div class="ex-subs-panel">${panelInner}</div>` : ''}
     </div>
   `;
