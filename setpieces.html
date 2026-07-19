@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Set piece designer: corners, throw-ins, free kicks, penalties and more, built on a half pitch.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#9917;</text></svg>">
+<title>Set Pieces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+  /* ===================== DESIGN TOKENS (shared with Team Manager) ===================== */
+  :root{
+    --bg:#0b0d12; --surface:#12151c; --surface-2:#171b24; --border:#262b36;
+    --ink:#e7eaf0; --muted:#8a93a6;
+    --brand:#22a869; --brand-dark:#178754; --brand-soft:rgba(34,168,105,.14);
+    --danger:#e0554f; --danger-soft:rgba(224,85,79,.12);
+    --accent:#5fb3ff; --accent-soft:rgba(95,179,255,.14);
+    --radius-lg:16px; --radius-md:11px; --radius-sm:8px;
+    --shadow-pop:0 20px 60px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif;letter-spacing:.02em;}
+  button{font-family:inherit;cursor:pointer;}
+  textarea{font-family:inherit;}
+  a{color:inherit;}
+  ::selection{background:var(--brand);color:#fff;}
+
+  .app-shell{min-height:100vh;display:flex;flex-direction:column;}
+  header.topbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
+  .topbar-inner{max-width:1320px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#1c6fd6);
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .brand-text{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:.03em;}
+  .brand-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .topbar-spacer{flex:1;}
+  .pill-status{font-size:11.5px;padding:5px 10px;border-radius:100px;background:var(--surface-2);
+    border:1px solid var(--border);display:flex;align-items:center;gap:6px;color:var(--muted);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .dot.on{background:#3fd17a;box-shadow:0 0 0 3px rgba(63,209,122,.18);}
+  .dot.err{background:var(--danger);}
+  .back-link{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--border);
+    border-radius:100px;padding:5px 12px;background:var(--surface-2);}
+  .back-link:hover{color:var(--ink);}
+
+  .btn{border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:filter .12s ease,transform .1s ease;white-space:nowrap;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-accent{background:var(--accent);color:#0b1220;}
+  .btn-accent:hover{filter:brightness(1.08);}
+  .btn-ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--border);}
+  .btn-ghost.active{background:var(--accent-soft);border-color:rgba(95,179,255,.5);color:var(--accent);}
+  .btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(224,85,79,.35);}
+  .btn-danger:hover{background:rgba(224,85,79,.22);}
+  .btn-sm{padding:6px 11px;font-size:12px;border-radius:7px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:100px;padding:5px 6px 5px 12px;font-size:12.5px;}
+  .role-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:100px;}
+  .role-badge.editor{background:var(--brand-soft);color:var(--brand);}
+  .role-badge.viewer{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+
+  main{max-width:1320px;margin:0 auto;padding:22px 20px 60px;width:100%;flex:1;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;}
+  .card + .card{margin-top:16px;}
+  .card h2{margin:0 0 4px;font-size:14px;letter-spacing:.03em;}
+  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px;}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .toolbar-spacer{flex:1;}
+  .dirty-dot{width:7px;height:7px;border-radius:50%;background:#e0a13f;display:none;}
+  .dirty-dot.show{display:inline-block;}
+
+  .search-input{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13.5px;
+    background:var(--surface-2);color:var(--ink);font-family:inherit;width:100%;}
+  .search-input:focus{outline:2px solid var(--accent);outline-offset:-1px;}
+  .select{border:1px solid var(--border);border-radius:8px;padding:9px 30px 9px 12px;font-size:13px;
+    background:var(--surface-2);color:var(--ink);font-family:inherit;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a93a6'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;}
+  .select:focus{outline:2px solid var(--accent);outline-offset:-1px;}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .field input, .field textarea{border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;
+    font-family:inherit;background:var(--surface-2);color:var(--ink);resize:vertical;}
+  .field input:focus, .field textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;}
+  .hint{font-size:11.5px;color:var(--muted);line-height:1.5;margin:10px 0 0;}
+
+  .spinner{width:20px;height:20px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);
+    animation:spin .7s linear infinite;}
+  .spinner.center{margin:40px auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(6,8,12,.65);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow-y:auto;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:400px;
+    box-shadow:var(--shadow-pop);animation:pop .16s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
+  .modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-head h3{margin:0;font-size:16px;}
+  .modal-close{background:none;border:none;font-size:20px;color:var(--muted);line-height:1;padding:4px;}
+  .modal-body{padding:20px;}
+  .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+  .mode-switch{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;margin-bottom:16px;}
+  .mode-switch button{flex:1;background:none;border:none;border-radius:7px;padding:8px;font-size:12.5px;font-weight:600;color:var(--muted);}
+  .mode-switch button.active{background:var(--accent);color:#0b1220;}
+  .form-error{font-size:12px;color:var(--danger);background:var(--danger-soft);border:1px solid rgba(224,85,79,.3);
+    border-radius:8px;padding:9px 11px;margin-top:4px;}
+  .form-info{font-size:12px;color:var(--brand);background:var(--brand-soft);border:1px solid rgba(34,168,105,.3);
+    border-radius:8px;padding:9px 11px;margin-top:4px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--ink);
+    border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow-pop);
+    z-index:200;display:none;max-width:90vw;}
+  .toast.show{display:block;}
+  .toast.error{border-color:rgba(224,85,79,.5);color:#ffb3af;}
+
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);cursor:pointer;user-select:none;}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  .export-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+
+  /* ===================== SET PIECE LAYOUT ===================== */
+  .sp-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;}
+  @media(max-width:920px){.sp-layout{grid-template-columns:1fr;}}
+
+  .sp-pitch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+  .sp-tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+  .sp-tag{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:100px;background:var(--surface-2);
+    border:1px solid var(--border);color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .sp-tag.phase-attacking{color:var(--brand);border-color:rgba(34,168,105,.35);background:var(--brand-soft);}
+  .sp-tag.phase-defending{color:#e0a13f;border-color:rgba(224,161,63,.4);background:rgba(224,161,63,.12);}
+
+  .sp-orientation-toggle{display:flex;gap:6px;}
+
+  .sp-draw-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:10px;}
+
+  .sp-pitch-wrap{max-width:640px;margin:0 auto;}
+  .sp-pitch{position:relative;width:100%;aspect-ratio:68/60;border-radius:12px;overflow:hidden;
+    border:2px solid rgba(255,255,255,.25);
+    background:repeating-linear-gradient(to bottom,#1d5c34 0 11%,#1a5430 11% 22%);
+    touch-action:none;}
+  .sp-pitch.drawing{cursor:crosshair;}
+  .sp-markings, .sp-arrows{position:absolute;inset:0;width:100%;height:100%;}
+  .sp-markings{color:rgba(255,255,255,.4);}
+  .sp-arrows{overflow:visible;}
+  .sp-markings path, .sp-markings rect, .sp-markings circle{fill:none;stroke:currentColor;stroke-width:.35;}
+  .sp-markings .sp-goal{fill:#fff;stroke:none;opacity:.75;}
+  .sp-markings .sp-spot{fill:currentColor;stroke:none;}
+
+  .sp-arrow-line{fill:none;stroke-linecap:round;}
+  .sp-arrow-solid{stroke:#fff;stroke-width:.55;}
+  .sp-arrow-dashed{stroke:#ffd23f;stroke-width:.55;stroke-dasharray:2.2,1.6;}
+
+  .sp-tokens{position:absolute;inset:0;}
+  .sp-token{position:absolute;transform:translate(-50%,-50%);width:11%;aspect-ratio:1;min-width:34px;max-width:52px;
+    border-radius:50%;background:var(--surface);border:2px solid var(--accent);display:flex;align-items:center;
+    justify-content:center;overflow:hidden;cursor:grab;touch-action:none;z-index:5;box-shadow:0 3px 10px rgba(0,0,0,.35);}
+  .sp-token.opponent{border-color:#e0554f;}
+  .sp-token:active{cursor:grabbing;z-index:6;}
+  .sp-token img{width:100%;height:100%;object-fit:cover;}
+  .sp-token .tk-num{font-size:12px;font-weight:800;color:#fff;}
+  .sp-token .tk-remove{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--danger);
+    color:#fff;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg);z-index:7;}
+  .sp-token-label{position:absolute;transform:translate(-50%,4px);top:100%;left:50%;font-size:9px;font-weight:700;color:#fff;
+    background:rgba(0,0,0,.6);padding:1px 5px;border-radius:5px;white-space:nowrap;pointer-events:none;}
+
+  .sp-roster-card{position:sticky;top:78px;}
+  .sp-roster-list{max-height:260px;overflow-y:auto;margin-bottom:4px;}
+  .sp-roster-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--border);
+    cursor:grab;border-radius:6px;}
+  .sp-roster-row:hover{background:var(--surface-2);}
+  .sp-roster-row:last-child{border-bottom:none;}
+  .sp-roster-row .avatar{width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:10.5px;color:var(--muted);flex-shrink:0;}
+  .sp-roster-row .avatar img{width:100%;height:100%;object-fit:cover;}
+  .sp-roster-row .rn{flex:1;font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sp-roster-row .rp{font-size:10.5px;color:var(--muted);}
+  .sp-roster-row .add-btn{width:22px;height:22px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);flex-shrink:0;padding:0;}
+  .sp-roster-row .add-btn:hover{background:var(--accent-soft);}
+  .sp-roster-row.placed{opacity:.45;}
+
+  .sp-board-list{max-height:420px;overflow-y:auto;}
+  .sp-board-group{margin-bottom:10px;}
+  .sp-board-group-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    padding:6px 4px 4px;}
+  .sp-board-row{display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:8px;cursor:pointer;
+    border:1px solid transparent;}
+  .sp-board-row:hover{background:var(--surface-2);}
+  .sp-board-row.active{background:var(--accent-soft);border-color:rgba(95,179,255,.4);}
+  .sp-board-row .bn{flex:1;font-size:12.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sp-board-row .bp{font-size:10px;color:var(--muted);}
+
+  .sp-arrow-list{margin-top:10px;}
+  .sp-arrow-item{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);
+    padding:5px 2px;border-bottom:1px solid var(--border);}
+  .sp-arrow-item:last-child{border-bottom:none;}
+  .sp-arrow-item button{background:none;border:none;color:var(--danger);font-size:13px;padding:2px 6px;}
+
+  .sp-empty{text-align:center;padding:60px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);}
+  .sp-empty .icon{width:46px;height:46px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:21px;}
+  .sp-empty h3{margin:0 0 8px;font-size:15px;}
+  .sp-empty p{color:var(--muted);font-size:13px;max-width:380px;margin:0 auto;line-height:1.5;}
+
+  /* ===================== EXPORT SHEET ===================== */
+  #exportSheet{position:fixed;top:0;left:-9999px;width:1500px;
+    --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
+    --ex-accent:#5fb3ff;--ex-chip-bg:#0e1c30;--ex-chip-border:rgba(255,255,255,.15);
+    --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
+    --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
+    --ex-token-bg:#1c6fd6;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+    background:linear-gradient(160deg,var(--ex-bg1),var(--ex-bg2) 65%);color:var(--ex-text);
+    padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
+  #exportSheet[data-theme="white"]{
+    --ex-bg1:#ffffff;--ex-bg2:#f4f6f7;--ex-text:#12151c;--ex-muted:rgba(0,0,0,.5);--ex-muted2:rgba(0,0,0,.35);
+    --ex-accent:#1c6fd6;--ex-chip-bg:#eef2f5;--ex-chip-border:#dde3ec;
+    --ex-badge-bg:#eef2f5;--ex-badge-border:#dde3ec;--ex-panel-bg:#f7f9f8;--ex-panel-border:#e3e8e4;
+    --ex-token-bg:#1c6fd6;--ex-token-border:#12151c;--ex-line:rgba(0,0,0,.35);
+  }
+  #exportSheet[data-theme="blue"]{
+    --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
+    --ex-accent:#5fb3ff;--ex-chip-bg:#0e1c30;--ex-chip-border:rgba(255,255,255,.15);
+    --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
+    --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
+    --ex-token-bg:#3ec6ff;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+  }
+  #exportSheet[data-theme="gray"]{
+    --ex-bg1:#33363d;--ex-bg2:#24262b;--ex-text:#f1f2f4;--ex-muted:rgba(255,255,255,.5);--ex-muted2:rgba(255,255,255,.35);
+    --ex-accent:#c6cad2;--ex-chip-bg:#3d4048;--ex-chip-border:rgba(255,255,255,.18);
+    --ex-badge-bg:rgba(255,255,255,.07);--ex-badge-border:rgba(255,255,255,.16);
+    --ex-panel-bg:rgba(255,255,255,.04);--ex-panel-border:rgba(255,255,255,.12);
+    --ex-token-bg:#9aa1ac;--ex-token-border:rgba(255,255,255,.55);--ex-line:rgba(255,255,255,.4);
+  }
+  .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:10px;}
+  .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
+  .ex-club-logo{width:60px;height:60px;border-radius:50%;object-fit:contain;flex-shrink:0;
+    background:var(--ex-chip-bg);border:2px solid var(--ex-chip-border);}
+  .ex-eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ex-accent);font-weight:700;}
+  .ex-team-name{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;color:var(--ex-text);}
+  .ex-spacer{flex:1;}
+  .ex-genstamp{font-size:11px;color:var(--ex-muted2);}
+  .ex-panels{display:flex;gap:22px;align-items:flex-start;}
+  .ex-panel{flex:1;min-width:0;background:var(--ex-panel-bg);border:1px solid var(--ex-panel-border);
+    border-radius:16px;padding:18px;}
+  .ex-panel-head{margin-bottom:12px;}
+  .ex-panel-title{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
+  .ex-panel-notes{font-size:12.5px;color:var(--ex-muted);margin-top:6px;line-height:1.5;}
+  .ex-pitch{position:relative;width:100%;aspect-ratio:68/60;border-radius:14px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.15);background:repeating-linear-gradient(to bottom,#163a24 0 11%,#123120 11% 22%);}
+  .ex-token{position:absolute;transform:translate(-50%,-50%);width:9.5%;aspect-ratio:1;border-radius:50%;
+    background:var(--ex-token-bg);border:2.5px solid var(--ex-token-border);display:flex;align-items:center;
+    justify-content:center;overflow:hidden;font-size:14px;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+  .ex-token img{width:100%;height:100%;object-fit:cover;}
+  .ex-token-label{position:absolute;top:100%;left:50%;transform:translate(-50%,3px);font-size:10px;font-weight:700;
+    color:#fff;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:5px;white-space:nowrap;}
+  .ex-footer-tag{margin-top:14px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ex-muted2);}
+
+  @media print{
+    body > *:not(#exportSheet){display:none !important;}
+    #exportSheet{position:static !important;left:auto !important;width:100% !important;border-radius:0 !important;}
+  }
+
+  footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
+  @media(max-width:640px){ .brand-text{display:none;} .modal{max-width:100%;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">&#9917;</div>
+        <div>
+          <div class="brand-text">SET PIECES</div>
+          <div class="brand-sub">Corners &middot; throw-ins &middot; free kicks &middot; more</div>
+        </div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <span class="pill-status"><span class="dot" id="connDot"></span><span id="connLabel">Connecting&hellip;</span></span>
+      <div id="authZone"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" id="notConfiguredCard" style="display:none;">
+      <h2>Not connected to Supabase yet</h2>
+      <p class="hint">Open <code>setpieces.html</code>, find <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> near the top of the &lt;script&gt; tag, and fill in the same values used in the main Team Manager app. Then run <code>patch-003-set-piece-boards.sql</code> in the Supabase SQL editor.</p>
+    </div>
+
+    <div id="appContent">
+      <div class="toolbar">
+        <button class="btn btn-primary btn-sm" id="newBoardBtn">+ New variant</button>
+        <button class="btn btn-ghost btn-sm" id="duplicateBoardBtn">&#10697; Duplicate</button>
+        <button class="btn btn-ghost btn-sm" id="editBoardBtn">&#9998; Edit details</button>
+        <button class="btn btn-danger btn-sm" id="deleteBoardBtn">&#128465; Delete</button>
+        <div class="toolbar-spacer"></div>
+        <span class="dirty-dot" id="dirtyDot" title="Unsaved changes"></span>
+        <button class="btn btn-accent btn-sm" id="saveBoardBtn">&#128190; Save</button>
+      </div>
+
+      <div id="emptyState" class="sp-empty" style="display:none;">
+        <div class="icon">&#127937;</div>
+        <h3>No variant selected</h3>
+        <p>Create a new variant &mdash; a corner, throw-in, free kick, penalty or anything else &mdash; then drag players onto the pitch and add arrows for runs and passes.</p>
+      </div>
+
+      <div id="editorArea">
+        <div class="sp-layout">
+          <div class="card sp-pitch-card">
+            <div class="sp-pitch-head">
+              <div>
+                <h2 id="boardTitle">&mdash;</h2>
+                <div class="sp-tag-row" id="boardTagRow"></div>
+              </div>
+              <div class="sp-orientation-toggle">
+                <button class="btn btn-ghost btn-sm" id="orientTopBtn" data-orient="top">Goal on top</button>
+                <button class="btn btn-ghost btn-sm" id="orientBottomBtn" data-orient="bottom">Goal on bottom</button>
+              </div>
+            </div>
+
+            <div class="sp-draw-toolbar">
+              <button class="btn btn-ghost btn-sm" id="drawArrowBtn">&#10132; Draw arrow</button>
+              <select class="select" id="arrowStyleSelect">
+                <option value="solid">Run (solid)</option>
+                <option value="dashed">Pass (dashed)</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" id="undoArrowBtn">&#8630; Undo arrow</button>
+              <button class="btn btn-ghost btn-sm" id="clearArrowsBtn">Clear arrows</button>
+              <div class="toolbar-spacer"></div>
+              <button class="btn btn-ghost btn-sm" id="clearTokensBtn">Clear players</button>
+            </div>
+
+            <div class="sp-pitch-wrap">
+              <div class="sp-pitch" id="spPitch">
+                <svg class="sp-markings" id="spMarkings" viewBox="0 0 68 60"></svg>
+                <svg class="sp-arrows" id="spArrows" viewBox="0 0 68 60">
+                  <defs>
+                    <marker id="arrowhead" markerWidth="3" markerHeight="3" refX="2.4" refY="1.5" orient="auto">
+                      <path d="M0,0 L3,1.5 L0,3 z" fill="currentColor"></path>
+                    </marker>
+                  </defs>
+                </svg>
+                <div class="sp-tokens" id="spTokens"></div>
+              </div>
+            </div>
+            <p class="hint">Drag players from the roster onto the pitch, or tap the + button to drop one in the middle. Drag a token to reposition it. Turn on &ldquo;Draw arrow&rdquo; then click-drag on the grass to add a run or pass line.</p>
+
+            <div class="sp-arrow-list" id="arrowList"></div>
+
+            <div class="field" style="margin-top:14px;">
+              <label>Notes</label>
+              <textarea id="boardNotes" rows="2" placeholder="Optional coaching notes for this variant&hellip;"></textarea>
+            </div>
+          </div>
+
+          <div class="card sp-roster-card">
+            <h2>Roster</h2>
+            <p class="sub">Same players as Team Manager.</p>
+            <input type="text" class="search-input" id="rosterSearch" placeholder="Search players&hellip;">
+            <div class="sp-roster-list" id="rosterList" style="margin-top:10px;"></div>
+
+            <h2 style="margin-top:20px;">Saved variants</h2>
+            <div class="sp-board-list" id="boardList"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Export</h2>
+          <p class="sub">Club logo, players and arrows &mdash; ready to print or share. Optionally pair it with a second variant on the same sheet.</p>
+          <div class="export-options">
+            <label class="chk"><input type="checkbox" id="optPhotos" checked> Player photos</label>
+            <label class="chk"><input type="checkbox" id="optNumbers" checked> Shirt numbers</label>
+            <label class="chk"><input type="checkbox" id="optNames" checked> Player names</label>
+            <label class="chk"><input type="checkbox" id="optArrows" checked> Arrows</label>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+            <select class="select" id="exportTheme">
+              <option value="white">Background: White</option>
+              <option value="blue">Background: Blue</option>
+              <option value="gray">Background: Gray</option>
+            </select>
+            <select class="select" id="secondaryBoardSelect">
+              <option value="">No second variant (one per page)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" id="exportPdfBtn">&#8681; Export PDF</button>
+            <button class="btn btn-ghost btn-sm" id="exportPngBtn">&#8681; Export PNG</button>
+            <button class="btn btn-ghost btn-sm" id="printBtn">&#128424; Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>Set Pieces &middot; shares its roster with Team Manager, data stored in Supabase</footer>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="authModalTitle">Sign in</h3><button class="modal-close" data-close="authModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="mode-switch">
+        <button id="modeSignIn" class="active">Sign in</button>
+        <button id="modeSignUp">Sign up</button>
+      </div>
+      <div class="field" id="fullNameField" style="display:none;">
+        <label>Full name</label>
+        <input type="text" id="authFullName" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="authEmail" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="authPassword" autocomplete="current-password">
+      </div>
+      <p class="hint">Sign in with the same account you use in Team Manager. Viewers can look; editors can build and save variants.</p>
+      <div class="form-error" id="authError" style="display:none;"></div>
+      <div class="form-info" id="authInfo" style="display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close="authModal">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="authSubmit">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD MODAL (new / edit details) -->
+<div class="modal-overlay" id="boardModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="boardModalTitle">New variant</h3><button class="modal-close" data-close="boardModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input type="text" id="bmName" placeholder="e.g. Variant 1"></div>
+      <div class="field"><label>Set piece</label>
+        <select class="select" id="bmCategory">
+          <option value="corner">Corner</option>
+          <option value="throw_in">Throw-in</option>
+          <option value="free_kick">Free kick</option>
+          <option value="penalty">Penalty</option>
+          <option value="kick_off">Kick-off</option>
+          <option value="goal_kick">Goal kick</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="field"><label>Phase</label>
+        <select class="select" id="bmPhase">
+          <option value="attacking">Attacking</option>
+          <option value="defending">Defending</option>
+        </select>
+      </div>
+      <div class="field"><label>Pitch orientation</label>
+        <select class="select" id="bmOrientation">
+          <option value="bottom">Goal on bottom</option>
+          <option value="top">Goal on top</option>
+        </select>
+      </div>
+      <div class="form-error" id="boardModalError" style="display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close="boardModal">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="boardModalSubmit">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-body" style="padding-top:24px;">
+      <p id="confirmMessage" style="font-size:14px;margin:0;"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="confirmCancelBtn">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="exportSheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   1) CONFIGURATION — same Supabase project as the Team Manager app
+   ====================================================================== */
+const SUPABASE_URL = "https://rflgdbasrdxtjnvuhctj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_lLcJkMMyvzh2ueCYzfMAzg_xjbHbwEZ";
+
+const isConfigured = !SUPABASE_URL.includes('YOUR_SUPABASE') && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
+const sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const CLUB_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
+
+const CATEGORY_LABELS = { corner:'Corner', throw_in:'Throw-in', free_kick:'Free Kick', penalty:'Penalty', kick_off:'Kick-off', goal_kick:'Goal Kick', custom:'Custom' };
+const PHASE_LABELS = { attacking:'Attacking', defending:'Defending' };
+
+// Half-pitch markings (real-world meters), canonical orientation = goal at y=60 (bottom).
+// For "top" orientation the whole group is mirrored vertically at render time.
+const MARKINGS_INNER = `
+  <rect x="1" y="0" width="66" height="60"></rect>
+  <rect x="13.84" y="43.5" width="40.32" height="16.5"></rect>
+  <rect x="24.84" y="54.5" width="18.32" height="5.5"></rect>
+  <circle class="sp-spot" cx="34" cy="49" r="0.35"></circle>
+  <path d="M26.69,43.5 A9.15,9.15 0 0 0 41.31,43.5"></path>
+  <path d="M24.85,0 A9.15,9.15 0 0 0 43.15,0"></path>
+  <path d="M1,59 A1,1 0 0 0 2,60"></path>
+  <path d="M67,59 A1,1 0 0 1 66,60"></path>
+  <rect class="sp-goal" x="30.34" y="59.4" width="7.32" height="0.6"></rect>
+`;
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+/* ======================================================================
+   2) STATE
+   ====================================================================== */
+let state = {
+  session: null,
+  profile: null,
+  authMode: 'sign-in',
+  club: null,
+  players: [],
+  rosterSearch: '',
+  boards: [],
+  board: null,        // in-memory copy currently being edited (has .id if persisted)
+  dirty: false,
+  drawMode: false,
+  boardModalMode: 'new',
+};
+
+const isEditor = () => state.profile?.role === 'editor';
+
+function toast(msg, isError){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+function uid(){
+  return (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).slice(2) + Date.now());
+}
+function emptyBoard(overrides){
+  return Object.assign({
+    id: null, name: 'Untitled variant', category: 'corner', phase: 'attacking',
+    orientation: 'bottom', notes: '', tokens: [], arrows: [],
+  }, overrides || {});
+}
+function markDirty(){
+  state.dirty = true;
+  $('#dirtyDot').classList.add('show');
+}
+function clearDirty(){
+  state.dirty = false;
+  $('#dirtyDot').classList.remove('show');
+}
+
+/* ======================================================================
+   3) INIT
+   ====================================================================== */
+async function init(){
+  bindStaticEvents();
+
+  if(!isConfigured){
+    $('#connLabel').textContent = 'Not configured';
+    $('#connDot').classList.add('err');
+    $('#notConfiguredCard').style.display = 'block';
+    $('#appContent').style.display = 'none';
+    renderAuthZone();
+    return;
+  }
+
+  try{
+    const { data: { session } } = await sb.auth.getSession();
+    state.session = session;
+    if(session) await loadProfile(session.user.id);
+    $('#connDot').classList.add('on');
+    $('#connLabel').textContent = 'Connected';
+  }catch(e){
+    console.error(e);
+    $('#connDot').classList.add('err');
+    $('#connLabel').textContent = 'Connection error';
+    toast('Could not reach Supabase — check the URL/key.', true);
+  }
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    state.session = session;
+    if(session) await loadProfile(session.user.id);
+    else state.profile = null;
+    renderAuthZone();
+    renderRoster();
+    renderBoardList();
+    renderPitchChrome();
+  });
+
+  renderAuthZone();
+  loadClubSettings();
+  loadPlayers();
+  loadBoards();
+
+  sb.channel('realtime:sp_players')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadPlayers)
+    .subscribe();
+  sb.channel('realtime:sp_club')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'club_settings' }, loadClubSettings)
+    .subscribe();
+  sb.channel('realtime:sp_boards')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'set_piece_boards' }, () => loadBoards(true))
+    .subscribe();
+
+  renderEmptyOrEditor();
+}
+
+async function loadProfile(userId){
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+  if(error){ console.error(error); return; }
+  state.profile = data;
+}
+
+async function loadClubSettings(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('club_settings').select('*').eq('id', CLUB_SETTINGS_ID).maybeSingle();
+  if(error){ console.error(error); return; }
+  state.club = data;
+}
+
+async function loadPlayers(){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('players').select('*').order('last_name');
+  if(error){ console.error(error); toast('Could not load players: ' + error.message, true); return; }
+  state.players = data || [];
+  renderRoster();
+}
+
+async function loadBoards(preserveSelection){
+  if(!isConfigured) return;
+  const { data, error } = await sb.from('set_piece_boards').select('*')
+    .order('category').order('phase').order('name');
+  if(error){ console.error(error); toast('Could not load variants: ' + error.message, true); return; }
+  state.boards = data || [];
+  renderBoardList();
+  populateSecondaryBoardSelect();
+  if(preserveSelection && state.board?.id){
+    const fresh = state.boards.find(b => b.id === state.board.id);
+    if(fresh && !state.dirty) applyBoardToEditor(fresh);
+  }
+}
+
+/* ======================================================================
+   4) STATIC EVENT BINDING
+   ====================================================================== */
+function bindStaticEvents(){
+  bindConfirmDialog();
+
+  $$('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
+
+  $('#modeSignIn').addEventListener('click', () => setAuthMode('sign-in'));
+  $('#modeSignUp').addEventListener('click', () => setAuthMode('sign-up'));
+  $('#authSubmit').addEventListener('click', submitAuth);
+
+  $('#newBoardBtn').addEventListener('click', () => openBoardModal('new'));
+  $('#editBoardBtn').addEventListener('click', () => openBoardModal('edit'));
+  $('#duplicateBoardBtn').addEventListener('click', duplicateBoard);
+  $('#deleteBoardBtn').addEventListener('click', deleteBoard);
+  $('#saveBoardBtn').addEventListener('click', saveBoard);
+  $('#boardModalSubmit').addEventListener('click', submitBoardModal);
+
+  $('#orientTopBtn').addEventListener('click', () => setOrientation('top'));
+  $('#orientBottomBtn').addEventListener('click', () => setOrientation('bottom'));
+
+  $('#drawArrowBtn').addEventListener('click', toggleDrawMode);
+  $('#undoArrowBtn').addEventListener('click', undoArrow);
+  $('#clearArrowsBtn').addEventListener('click', clearArrows);
+  $('#clearTokensBtn').addEventListener('click', clearTokens);
+
+  $('#boardNotes').addEventListener('input', (e) => {
+    if(!state.board) return;
+    state.board.notes = e.target.value;
+    markDirty();
+  });
+
+  $('#rosterSearch').addEventListener('input', (e) => {
+    state.rosterSearch = e.target.value;
+    renderRoster();
+  });
+
+  $('#exportPdfBtn').addEventListener('click', exportPDF);
+  $('#exportPngBtn').addEventListener('click', exportPNG);
+  $('#printBtn').addEventListener('click', printBoard);
+
+  bindPitchInteractions();
+
+  window.addEventListener('beforeunload', (e) => {
+    if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
+  });
+}
+
+/* ======================================================================
+   5) AUTH
+   ====================================================================== */
+function renderAuthZone(){
+  const zone = $('#authZone');
+  if(!state.session){
+    zone.innerHTML = `<button class="btn btn-primary btn-sm" id="openAuthBtn">Sign in</button>`;
+    $('#openAuthBtn').addEventListener('click', () => openModal('authModal'));
+    return;
+  }
+  const role = state.profile?.role || 'viewer';
+  const name = state.profile?.full_name || state.session.user.email;
+  zone.innerHTML = `
+    <div class="user-chip">
+      <span>${escapeHtml(name)}</span>
+      <span class="role-badge ${role}">${role}</span>
+      <button class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
+    </div>`;
+  $('#signOutBtn').addEventListener('click', async () => { await sb.auth.signOut(); toast('Signed out'); });
+}
+
+function setAuthMode(mode){
+  state.authMode = mode;
+  $('#modeSignIn').classList.toggle('active', mode === 'sign-in');
+  $('#modeSignUp').classList.toggle('active', mode === 'sign-up');
+  $('#fullNameField').style.display = mode === 'sign-up' ? 'flex' : 'none';
+  $('#authModalTitle').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
+  $('#authSubmit').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
+  $('#authError').style.display = 'none';
+  $('#authInfo').style.display = 'none';
+}
+
+async function submitAuth(){
+  const email = $('#authEmail').value.trim();
+  const password = $('#authPassword').value;
+  const fullName = $('#authFullName').value.trim();
+  const errEl = $('#authError'), infoEl = $('#authInfo');
+  errEl.style.display = 'none'; infoEl.style.display = 'none';
+  if(!email || !password){ errEl.textContent = 'Email and password are required.'; errEl.style.display = 'block'; return; }
+
+  $('#authSubmit').disabled = true;
+  let result;
+  if(state.authMode === 'sign-in') result = await sb.auth.signInWithPassword({ email, password });
+  else result = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+  $('#authSubmit').disabled = false;
+
+  if(result.error){ errEl.textContent = result.error.message; errEl.style.display = 'block'; return; }
+  if(state.authMode === 'sign-up'){
+    infoEl.textContent = 'Account created. If email confirmation is on, check your inbox, then sign in.';
+    infoEl.style.display = 'block';
+    setAuthMode('sign-in');
+    return;
+  }
+  closeModal('authModal');
+  toast('Signed in');
+}
+
+/* ======================================================================
+   6) MODAL HELPERS
+   ====================================================================== */
+function openModal(id){ $('#' + id).classList.add('show'); }
+function closeModal(id){ $('#' + id).classList.remove('show'); }
+
+let _confirmResolve = null;
+function confirmDialog(message, okLabel){
+  $('#confirmMessage').textContent = message;
+  $('#confirmOkBtn').textContent = okLabel || 'Delete';
+  openModal('confirmModal');
+  return new Promise((resolve) => { _confirmResolve = resolve; });
+}
+function bindConfirmDialog(){
+  $('#confirmCancelBtn').addEventListener('click', () => { closeModal('confirmModal'); if(_confirmResolve){ _confirmResolve(false); _confirmResolve = null; } });
+  $('#confirmOkBtn').addEventListener('click', () => { closeModal('confirmModal'); if(_confirmResolve){ _confirmResolve(true); _confirmResolve = null; } });
+}
+
+/* ======================================================================
+   7) ROSTER PANEL
+   ====================================================================== */
+function playerInitial(p){ return (p.last_name || '?')[0]; }
+function playerName(p){ return `${p.first_name} ${p.last_name}`; }
+
+function renderRoster(){
+  const list = $('#rosterList');
+  const q = state.rosterSearch.trim().toLowerCase();
+  const placedIds = new Set((state.board?.tokens || []).map(t => t.player_id));
+  const players = state.players.filter(p => {
+    if(!q) return true;
+    return `${p.first_name} ${p.last_name} ${p.shirt_number ?? ''} ${p.primary_position}`.toLowerCase().includes(q);
+  });
+  if(!players.length){
+    list.innerHTML = '<p class="hint">No players found.</p>';
+    return;
+  }
+  list.innerHTML = players.map(p => `
+    <div class="sp-roster-row${placedIds.has(p.id) ? ' placed' : ''}" draggable="true" data-player="${p.id}">
+      <div class="avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : playerInitial(p)}</div>
+      <div class="rn">${escapeHtml(playerName(p))}</div>
+      <div class="rp">${p.shirt_number ?? '—'} &middot; ${p.primary_position}</div>
+      <button class="add-btn" data-add="${p.id}" title="Add to pitch">+</button>
+    </div>
+  `).join('');
+
+  $$('#rosterList [data-add]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); addPlayerToken(btn.dataset.add); });
+  });
+  $$('#rosterList .sp-roster-row').forEach(row => {
+    row.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', row.dataset.player);
+    });
+  });
+}
+
+/* ======================================================================
+   8) BOARD LIST + SELECTION
+   ====================================================================== */
+function renderBoardList(){
+  const el = $('#boardList');
+  if(!state.boards.length){
+    el.innerHTML = '<p class="hint">No variants saved yet.</p>';
+    return;
+  }
+  const groups = {};
+  state.boards.forEach(b => {
+    const key = `${CATEGORY_LABELS[b.category] || b.category} &middot; ${PHASE_LABELS[b.phase] || b.phase}`;
+    (groups[key] = groups[key] || []).push(b);
+  });
+  el.innerHTML = Object.keys(groups).sort().map(key => `
+    <div class="sp-board-group">
+      <div class="sp-board-group-title">${key}</div>
+      ${groups[key].map(b => `
+        <div class="sp-board-row${state.board?.id === b.id ? ' active' : ''}" data-board="${b.id}">
+          <div class="bn">${escapeHtml(b.name)}</div>
+          <div class="bp">${(b.tokens || []).length} players</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+  $$('#boardList [data-board]').forEach(row => {
+    row.addEventListener('click', () => {
+      if(state.dirty && !confirm('Discard unsaved changes on the current variant?')) return;
+      const board = state.boards.find(b => b.id === row.dataset.board);
+      if(board) applyBoardToEditor(board);
+    });
+  });
+}
+
+function populateSecondaryBoardSelect(){
+  const sel = $('#secondaryBoardSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">No second variant (one per page)</option>' +
+    state.boards.filter(b => b.id !== state.board?.id).map(b =>
+      `<option value="${b.id}">${escapeHtml(b.name)} (${CATEGORY_LABELS[b.category] || b.category})</option>`
+    ).join('');
+  if([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+function applyBoardToEditor(board){
+  state.board = JSON.parse(JSON.stringify(board));
+  clearDirty();
+  state.drawMode = false;
+  renderEmptyOrEditor();
+  renderBoardList();
+  renderRoster();
+  populateSecondaryBoardSelect();
+  renderPitch();
+}
+
+function renderEmptyOrEditor(){
+  const has = !!state.board;
+  $('#emptyState').style.display = has ? 'none' : 'block';
+  $('#editorArea').style.display = has ? 'block' : 'none';
+  renderPitchChrome();
+}
+
+function renderPitchChrome(){
+  if(!state.board){ return; }
+  const editable = isEditor();
+  $('#boardTitle').textContent = state.board.name;
+  $('#boardTagRow').innerHTML = `
+    <span class="sp-tag phase-${state.board.phase}">${PHASE_LABELS[state.board.phase] || state.board.phase}</span>
+    <span class="sp-tag">${CATEGORY_LABELS[state.board.category] || state.board.category}</span>
+  `;
+  $('#boardNotes').value = state.board.notes || '';
+  $('#orientTopBtn').classList.toggle('active', state.board.orientation === 'top');
+  $('#orientBottomBtn').classList.toggle('active', state.board.orientation === 'bottom');
+  ['newBoardBtn','duplicateBoardBtn','editBoardBtn','deleteBoardBtn','saveBoardBtn','drawArrowBtn',
+   'undoArrowBtn','clearArrowsBtn','clearTokensBtn','orientTopBtn','orientBottomBtn','boardNotes'].forEach(id => {
+    $('#' + id).disabled = !editable;
+  });
+}
+
+/* ======================================================================
+   9) BOARD MODAL (new / edit)
+   ====================================================================== */
+function openBoardModal(mode){
+  state.boardModalMode = mode;
+  $('#boardModalError').style.display = 'none';
+  if(mode === 'new'){
+    $('#boardModalTitle').textContent = 'New variant';
+    $('#bmName').value = 'Variant ' + (state.boards.length + 1);
+    $('#bmCategory').value = 'corner';
+    $('#bmPhase').value = 'attacking';
+    $('#bmOrientation').value = 'bottom';
+  }else{
+    if(!state.board) return;
+    $('#boardModalTitle').textContent = 'Edit details';
+    $('#bmName').value = state.board.name;
+    $('#bmCategory').value = state.board.category;
+    $('#bmPhase').value = state.board.phase;
+    $('#bmOrientation').value = state.board.orientation;
+  }
+  openModal('boardModal');
+}
+
+async function submitBoardModal(){
+  const name = $('#bmName').value.trim();
+  const errEl = $('#boardModalError');
+  if(!name){ errEl.textContent = 'Please enter a name.'; errEl.style.display = 'block'; return; }
+  const fields = {
+    name,
+    category: $('#bmCategory').value,
+    phase: $('#bmPhase').value,
+    orientation: $('#bmOrientation').value,
+  };
+
+  if(state.boardModalMode === 'new'){
+    const board = emptyBoard(fields);
+    const { data, error } = await sb.from('set_piece_boards').insert(board).select().single();
+    if(error){ errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+    closeModal('boardModal');
+    await loadBoards();
+    applyBoardToEditor(data);
+    toast('Variant created');
+  }else{
+    Object.assign(state.board, fields);
+    closeModal('boardModal');
+    renderPitchChrome();
+    renderPitch();
+    markDirty();
+    await saveBoard();
+  }
+}
+
+async function duplicateBoard(){
+  if(!state.board) return;
+  const clone = emptyBoard({
+    name: 'Copy of ' + state.board.name,
+    category: state.board.category,
+    phase: state.board.phase,
+    orientation: state.board.orientation,
+    notes: state.board.notes,
+    tokens: state.board.tokens,
+    arrows: state.board.arrows,
+  });
+  const { data, error } = await sb.from('set_piece_boards').insert(clone).select().single();
+  if(error){ toast(error.message, true); return; }
+  await loadBoards();
+  applyBoardToEditor(data);
+  toast('Variant duplicated');
+}
+
+async function deleteBoard(){
+  if(!state.board) return;
+  const ok = await confirmDialog(`Delete "${state.board.name}"? This can't be undone.`, 'Delete');
+  if(!ok) return;
+  const { error } = await sb.from('set_piece_boards').delete().eq('id', state.board.id);
+  if(error){ toast(error.message, true); return; }
+  state.board = null;
+  clearDirty();
+  await loadBoards();
+  if(state.boards.length) applyBoardToEditor(state.boards[0]);
+  else renderEmptyOrEditor();
+  toast('Variant deleted');
+}
+
+async function saveBoard(){
+  if(!state.board) return;
+  if(!isEditor()){ toast('Only editors can save.', true); return; }
+  const payload = {
+    name: state.board.name,
+    category: state.board.category,
+    phase: state.board.phase,
+    orientation: state.board.orientation,
+    notes: state.board.notes,
+    tokens: state.board.tokens,
+    arrows: state.board.arrows,
+  };
+  const { error } = await sb.from('set_piece_boards').update(payload).eq('id', state.board.id);
+  if(error){ toast(error.message, true); return; }
+  clearDirty();
+  await loadBoards(true);
+  toast('Saved');
+}
+
+/* ======================================================================
+   10) PITCH MARKINGS + ORIENTATION
+   ====================================================================== */
+function setOrientation(orient){
+  if(!state.board || !isEditor()) return;
+  state.board.orientation = orient;
+  markDirty();
+  renderPitchChrome();
+  renderPitch();
+  toast('Pitch flipped — you may want to reposition players.');
+}
+
+function paintMarkings(svgEl, orientation){
+  svgEl.querySelectorAll('g[data-markings]').forEach(g => g.remove());
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('data-markings', '1');
+  g.innerHTML = MARKINGS_INNER;
+  if(orientation === 'top') g.setAttribute('transform', 'matrix(1,0,0,-1,0,60)');
+  svgEl.appendChild(g);
+}
+
+function renderPitch(){
+  if(!state.board) return;
+  paintMarkings($('#spMarkings'), state.board.orientation);
+  renderTokens();
+  renderArrows();
+}
+
+/* ======================================================================
+   11) TOKENS (players on the pitch)
+   ====================================================================== */
+function findPlayer(id){ return state.players.find(p => p.id === id); }
+
+function addPlayerToken(playerId, xPct, yPct){
+  if(!state.board || !isEditor()) return;
+  const token = { id: uid(), player_id: playerId, x: xPct ?? 50, y: yPct ?? 50 };
+  state.board.tokens.push(token);
+  markDirty();
+  renderTokens();
+  renderRoster();
+}
+function removeToken(tokenId){
+  if(!state.board || !isEditor()) return;
+  state.board.tokens = state.board.tokens.filter(t => t.id !== tokenId);
+  markDirty();
+  renderTokens();
+  renderRoster();
+}
+function clearTokens(){
+  if(!state.board || !isEditor() || !state.board.tokens.length) return;
+  state.board.tokens = [];
+  markDirty();
+  renderTokens();
+  renderRoster();
+}
+
+function renderTokens(){
+  const wrap = $('#spTokens');
+  wrap.innerHTML = '';
+  const editable = isEditor();
+  (state.board.tokens || []).forEach(token => {
+    const p = findPlayer(token.player_id);
+    const el = document.createElement('div');
+    el.className = 'sp-token';
+    el.dataset.token = token.id;
+    el.style.left = token.x + '%';
+    el.style.top = token.y + '%';
+    el.innerHTML = p?.photo_url
+      ? `<img src="${p.photo_url}" alt="">`
+      : `<span class="tk-num">${p?.shirt_number ?? (p ? playerInitial(p) : '?')}</span>`;
+    if(p) el.insertAdjacentHTML('beforeend', `<div class="sp-token-label">${escapeHtml(p.last_name)}</div>`);
+    if(editable) el.insertAdjacentHTML('beforeend', `<button class="tk-remove" data-remove="${token.id}">&times;</button>`);
+    wrap.appendChild(el);
+  });
+
+  if(!editable) return;
+  wrap.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeToken(btn.dataset.remove); });
+  });
+  wrap.querySelectorAll('.sp-token').forEach(el => bindTokenDrag(el));
+}
+
+function bindTokenDrag(el){
+  el.addEventListener('pointerdown', (e) => {
+    if(e.target.closest('.tk-remove') || !isEditor()) return;
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    const pitchRect = $('#spPitch').getBoundingClientRect();
+    const move = (ev) => {
+      let x = ((ev.clientX - pitchRect.left) / pitchRect.width) * 100;
+      let y = ((ev.clientY - pitchRect.top) / pitchRect.height) * 100;
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+      const token = state.board.tokens.find(t => t.id === el.dataset.token);
+      if(token){ token.x = x; token.y = y; }
+    };
+    const up = (ev) => {
+      el.releasePointerCapture(e.pointerId);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      markDirty();
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+  });
+}
+
+/* ======================================================================
+   12) ARROWS
+   ====================================================================== */
+function toggleDrawMode(){
+  if(!state.board || !isEditor()) return;
+  state.drawMode = !state.drawMode;
+  $('#drawArrowBtn').classList.toggle('active', state.drawMode);
+  $('#spPitch').classList.toggle('drawing', state.drawMode);
+}
+
+function undoArrow(){
+  if(!state.board || !isEditor() || !state.board.arrows.length) return;
+  state.board.arrows.pop();
+  markDirty();
+  renderArrows();
+}
+function clearArrows(){
+  if(!state.board || !isEditor() || !state.board.arrows.length) return;
+  state.board.arrows = [];
+  markDirty();
+  renderArrows();
+}
+function removeArrow(arrowId){
+  if(!state.board || !isEditor()) return;
+  state.board.arrows = state.board.arrows.filter(a => a.id !== arrowId);
+  markDirty();
+  renderArrows();
+}
+
+function renderArrows(){
+  const svg = $('#spArrows');
+  svg.querySelectorAll('line[data-arrow]').forEach(l => l.remove());
+  (state.board.arrows || []).forEach(a => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('data-arrow', a.id);
+    line.setAttribute('x1', a.x1 / 100 * 68);
+    line.setAttribute('y1', a.y1 / 100 * 60);
+    line.setAttribute('x2', a.x2 / 100 * 68);
+    line.setAttribute('y2', a.y2 / 100 * 60);
+    line.setAttribute('class', 'sp-arrow-line ' + (a.style === 'dashed' ? 'sp-arrow-dashed' : 'sp-arrow-solid'));
+    line.setAttribute('marker-end', 'url(#arrowhead)');
+    svg.appendChild(line);
+  });
+  renderArrowList();
+}
+
+function renderArrowList(){
+  const el = $('#arrowList');
+  const arrows = state.board.arrows || [];
+  if(!arrows.length){ el.innerHTML = ''; return; }
+  const editable = isEditor();
+  el.innerHTML = arrows.map((a, i) => `
+    <div class="sp-arrow-item">
+      <span>${a.style === 'dashed' ? 'Pass' : 'Run'} arrow ${i + 1}</span>
+      ${editable ? `<button data-del-arrow="${a.id}">&times;</button>` : ''}
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-del-arrow]').forEach(btn => {
+    btn.addEventListener('click', () => removeArrow(btn.dataset.delArrow));
+  });
+}
+
+function bindPitchInteractions(){
+  const pitch = $('#spPitch');
+
+  pitch.addEventListener('dragover', (e) => e.preventDefault());
+  pitch.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const playerId = e.dataTransfer.getData('text/plain');
+    if(!playerId || !state.board || !isEditor()) return;
+    const rect = pitch.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    addPlayerToken(playerId, x, y);
+  });
+
+  let drawStart = null;
+  pitch.addEventListener('pointerdown', (e) => {
+    if(!state.drawMode || !state.board || !isEditor()) return;
+    if(e.target.closest('.sp-token')) return;
+    const rect = pitch.getBoundingClientRect();
+    drawStart = {
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    };
+    const svg = $('#spArrows');
+    const temp = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    temp.setAttribute('id', 'tempArrow');
+    temp.setAttribute('x1', drawStart.x / 100 * 68);
+    temp.setAttribute('y1', drawStart.y / 100 * 60);
+    temp.setAttribute('x2', drawStart.x / 100 * 68);
+    temp.setAttribute('y2', drawStart.y / 100 * 60);
+    const styleSel = $('#arrowStyleSelect').value;
+    temp.setAttribute('class', 'sp-arrow-line ' + (styleSel === 'dashed' ? 'sp-arrow-dashed' : 'sp-arrow-solid'));
+    temp.setAttribute('marker-end', 'url(#arrowhead)');
+    svg.appendChild(temp);
+
+    const move = (ev) => {
+      const r2 = pitch.getBoundingClientRect();
+      const x2 = ((ev.clientX - r2.left) / r2.width) * 100;
+      const y2 = ((ev.clientY - r2.top) / r2.height) * 100;
+      temp.setAttribute('x2', x2 / 100 * 68);
+      temp.setAttribute('y2', y2 / 100 * 60);
+    };
+    const up = (ev) => {
+      pitch.removeEventListener('pointermove', move);
+      pitch.removeEventListener('pointerup', up);
+      const r2 = pitch.getBoundingClientRect();
+      const x2 = Math.max(0, Math.min(100, ((ev.clientX - r2.left) / r2.width) * 100));
+      const y2 = Math.max(0, Math.min(100, ((ev.clientY - r2.top) / r2.height) * 100));
+      temp.remove();
+      const dist = Math.hypot(x2 - drawStart.x, y2 - drawStart.y);
+      if(dist > 3){
+        state.board.arrows.push({ id: uid(), x1: drawStart.x, y1: drawStart.y, x2, y2, style: styleSel });
+        markDirty();
+        renderArrows();
+      }
+      drawStart = null;
+    };
+    pitch.addEventListener('pointermove', move);
+    pitch.addEventListener('pointerup', up);
+  });
+}
+
+/* ======================================================================
+   13) EXPORT
+   ====================================================================== */
+function exportPitchPanel(board){
+  const opts = {
+    photos: $('#optPhotos').checked,
+    numbers: $('#optNumbers').checked,
+    names: $('#optNames').checked,
+    arrows: $('#optArrows').checked,
+  };
+  const tokensHtml = (board.tokens || []).map(t => {
+    const p = findPlayer(t.player_id);
+    const showPhoto = opts.photos && p?.photo_url;
+    let inner;
+    if(showPhoto) inner = `<img src="${p.photo_url}" crossorigin="anonymous" alt="">`;
+    else if(opts.numbers) inner = p?.shirt_number ?? (p ? playerInitial(p) : '?');
+    else if(opts.names) inner = p ? playerInitial(p) : '?';
+    else inner = '';
+    const label = (opts.names && p) ? `<div class="ex-token-label">${escapeHtml(p.last_name)}</div>` : '';
+    return `<div class="ex-token" style="left:${t.x}%;top:${t.y}%;">${inner}${label}</div>`;
+  }).join('');
+
+  const arrowsSvg = opts.arrows ? `
+    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 68 60">
+      <defs><marker id="exArrowhead-${board.id || 'x'}" markerWidth="3" markerHeight="3" refX="2.4" refY="1.5" orient="auto">
+        <path d="M0,0 L3,1.5 L0,3 z" fill="currentColor"></path>
+      </marker></defs>
+      <g style="color:var(--ex-line);">
+        ${(board.arrows || []).map(a => `
+          <line x1="${a.x1/100*68}" y1="${a.y1/100*60}" x2="${a.x2/100*68}" y2="${a.y2/100*60}"
+            stroke="currentColor" stroke-width="0.55" stroke-linecap="round"
+            ${a.style === 'dashed' ? 'stroke-dasharray="2.2,1.6"' : ''}
+            marker-end="url(#exArrowhead-${board.id || 'x'})"></line>
+        `).join('')}
+      </g>
+    </svg>` : '';
+
+  const markingsSvg = `
+    <svg style="position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.35);" viewBox="0 0 68 60">
+      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,60)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.35;">
+        ${MARKINGS_INNER}
+      </g>
+    </svg>`;
+
+  return `
+    <div class="ex-panel">
+      <div class="ex-panel-head">
+        <div class="ex-eyebrow">${CATEGORY_LABELS[board.category] || board.category} &middot; ${PHASE_LABELS[board.phase] || board.phase}</div>
+        <div class="ex-panel-title">${escapeHtml(board.name)}</div>
+        ${board.notes ? `<div class="ex-panel-notes">${escapeHtml(board.notes)}</div>` : ''}
+      </div>
+      <div class="ex-pitch">
+        ${markingsSvg}
+        ${arrowsSvg}
+        ${tokensHtml}
+      </div>
+    </div>
+  `;
+}
+
+function buildExportSheet(){
+  const theme = $('#exportTheme').value;
+  const secondaryId = $('#secondaryBoardSelect').value;
+  const secondary = secondaryId ? state.boards.find(b => b.id === secondaryId) : null;
+
+  const clubName = state.club?.club_name || 'My Club';
+  const clubLogo = state.club?.club_logo_url;
+  const dateStr = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const sheet = $('#exportSheet');
+  sheet.setAttribute('data-theme', theme);
+  sheet.innerHTML = `
+    <div class="ex-topbar">
+      <div class="ex-club">
+        ${clubLogo ? `<img class="ex-club-logo" src="${clubLogo}" crossorigin="anonymous" alt="">` : ''}
+        <div><div class="ex-eyebrow">Set Piece</div><div class="ex-team-name">${escapeHtml(clubName)}</div></div>
+      </div>
+      <div class="ex-spacer"></div>
+      <div class="ex-genstamp">Generated ${dateStr}</div>
+    </div>
+    <div class="ex-panels">
+      ${exportPitchPanel(state.board)}
+      ${secondary ? exportPitchPanel(secondary) : ''}
+    </div>
+    <div class="ex-footer-tag">Set Pieces</div>
+  `;
+}
+
+function exportBgFor(theme){
+  if(theme === 'white') return '#ffffff';
+  if(theme === 'gray') return '#24262b';
+  return '#0c1a2e';
+}
+
+async function exportPNG(){
+  if(!state.board){ toast('Select a variant first.', true); return; }
+  try{
+    buildExportSheet();
+    await new Promise((r) => setTimeout(r, 60));
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
+    const link = document.createElement('a');
+    link.download = (state.board.name || 'set-piece').toLowerCase().replace(/\s+/g, '-') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){ console.error(e); toast('Export failed — see console for details.', true); }
+}
+
+async function exportPDF(){
+  if(!state.board){ toast('Select a variant first.', true); return; }
+  try{
+    buildExportSheet();
+    await new Promise((r) => setTimeout(r, 60));
+    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let imgWidth = pageWidth - 20;
+    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+    if(imgHeight > pageHeight - 20){
+      imgHeight = pageHeight - 20;
+      imgWidth = (canvas.width * imgHeight) / canvas.height;
+    }
+    pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
+    pdf.save((state.board.name || 'set-piece').toLowerCase().replace(/\s+/g, '-') + '.pdf');
+  }catch(e){ console.error(e); toast('Export failed — see console for details.', true); }
+}
+
+function printBoard(){
+  if(!state.board){ toast('Select a variant first.', true); return; }
+  buildExportSheet();
+  setTimeout(() => window.print(), 60);
+}
+
+init();
+</script>
+</body>
+</html>
