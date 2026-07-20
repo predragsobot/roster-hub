@@ -268,16 +268,20 @@
   .ex-panel-head{margin-bottom:12px;}
   .ex-panel-title{font-size:22px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
   .ex-panel-notes{font-size:12.5px;color:var(--ex-muted);margin-top:6px;line-height:1.5;}
-  /* .ex-pitch and .ex-token width/height are set inline (px) by JS at export time — deliberately
+  /* .ex-token-wrap/.ex-token width/height are set inline (px) by JS at export time — deliberately
      not using CSS aspect-ratio here, since html2canvas does not reliably support it and was
-     cutting tokens/photos off. */
+     cutting tokens/photos off. The circular photo (overflow:hidden, for the round crop) and its
+     name label are siblings, not parent/child — nesting the label inside the clipped circle was
+     what caused both the photo and the name to render cut off in exports. */
   .ex-pitch{position:relative;border-radius:14px;overflow:hidden;
     border:1px solid var(--ex-pitch-border);background:var(--ex-pitch-bg);}
-  .ex-token{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
+  .ex-token-wrap{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
+    align-items:center;}
+  .ex-token{border-radius:50%;flex-shrink:0;overflow:hidden;
     background:var(--ex-token-bg);border:2.5px solid var(--ex-token-border);display:flex;align-items:center;
-    justify-content:center;overflow:hidden;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+    justify-content:center;font-weight:800;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);}
   .ex-token img{width:100%;height:100%;object-fit:cover;display:block;}
-  .ex-token-label{position:absolute;top:100%;left:50%;transform:translate(-50%,4px);font-weight:800;
+  .ex-token-label{margin-top:4px;font-weight:800;
     color:#fff;background:rgba(0,0,0,.65);padding:2px 7px;border-radius:5px;white-space:nowrap;}
   .ex-footer-tag{margin-top:14px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ex-muted2);}
 
@@ -1333,7 +1337,10 @@ function exportPitchPanel(board, pitchWidthPx){
     else inner = '';
     const label = (opts.names && p)
       ? `<div class="ex-token-label" style="font-size:${labelFontPx}px;">${escapeHtml(p.last_name)}</div>` : '';
-    return `<div class="ex-token" style="left:${t.x}%;top:${t.y}%;width:${tokenSizePx}px;height:${tokenSizePx}px;">${inner}${label}</div>`;
+    return `<div class="ex-token-wrap" style="left:${t.x}%;top:${t.y}%;">
+      <div class="ex-token" style="width:${tokenSizePx}px;height:${tokenSizePx}px;">${inner}</div>
+      ${label}
+    </div>`;
   }).join('');
 
   const arrowsSvg = opts.arrows ? `
