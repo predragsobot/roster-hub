@@ -147,7 +147,7 @@
     background:var(--surface-2);border:1px solid var(--border);border-radius:10px;}
 
   .sp-pitch-wrap{max-width:640px;margin:0 auto;}
-  .sp-pitch{position:relative;width:100%;aspect-ratio:68/60;border-radius:12px;overflow:hidden;
+  .sp-pitch{position:relative;width:100%;aspect-ratio:68/50;border-radius:12px;overflow:hidden;
     border:2px solid rgba(255,255,255,.25);
     background:repeating-linear-gradient(to bottom,#1d5c34 0 11%,#1a5430 11% 22%);
     touch-action:none;}
@@ -159,9 +159,7 @@
   .sp-markings .sp-goal{fill:#fff;stroke:none;opacity:.75;}
   .sp-markings .sp-spot{fill:currentColor;stroke:none;}
 
-  .sp-arrow-line{fill:none;stroke-linecap:round;}
-  .sp-arrow-solid{stroke:#fff;stroke-width:.28;}
-  .sp-arrow-dashed{stroke:#ffd23f;stroke-width:.28;stroke-dasharray:1.6,1.3;}
+  .sp-arrow-line{fill:none;stroke-linecap:round;stroke-width:.28;}
 
   .sp-tokens{position:absolute;inset:0;}
   .sp-token{position:absolute;transform:translate(-50%,-50%);width:11%;aspect-ratio:1;min-width:34px;max-width:52px;
@@ -355,9 +353,19 @@
 
             <div class="sp-draw-toolbar">
               <button class="btn btn-ghost btn-sm" id="drawArrowBtn">&#10132; Draw arrow</button>
-              <select class="select" id="arrowStyleSelect">
-                <option value="solid">Run (solid)</option>
-                <option value="dashed">Pass (dashed)</option>
+              <select class="select" id="arrowShapeSelect">
+                <option value="straight">Straight</option>
+                <option value="curved">Curved</option>
+              </select>
+              <select class="select" id="arrowPatternSelect">
+                <option value="solid">Solid (run)</option>
+                <option value="dashed">Dashed (pass)</option>
+              </select>
+              <select class="select" id="arrowColorSelect">
+                <option value="white">White</option>
+                <option value="yellow">Yellow</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
               </select>
               <button class="btn btn-ghost btn-sm" id="undoArrowBtn">&#8630; Undo arrow</button>
               <button class="btn btn-ghost btn-sm" id="clearArrowsBtn">Clear arrows</button>
@@ -367,8 +375,8 @@
 
             <div class="sp-pitch-wrap">
               <div class="sp-pitch" id="spPitch">
-                <svg class="sp-markings" id="spMarkings" viewBox="0 0 68 60"></svg>
-                <svg class="sp-arrows" id="spArrows" viewBox="0 0 68 60">
+                <svg class="sp-markings" id="spMarkings" viewBox="0 10 68 50"></svg>
+                <svg class="sp-arrows" id="spArrows" viewBox="0 10 68 50">
                   <defs>
                     <marker id="arrowhead" markerWidth="2" markerHeight="2" refX="1.6" refY="1" orient="auto">
                       <path d="M0,0 L2,1 L0,2 z" fill="currentColor"></path>
@@ -919,6 +927,12 @@ function populateSecondaryBoardSelect(){
 
 function applyBoardToEditor(board){
   state.board = JSON.parse(JSON.stringify(board));
+  state.board.arrows = (state.board.arrows || []).map(a => ({
+    id: a.id, x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2,
+    shape: a.shape || 'straight',
+    dash: a.dash !== undefined ? a.dash : (a.style === 'dashed'),
+    color: a.color || (a.style === 'dashed' ? 'yellow' : 'white'),
+  }));
   clearDirty();
   state.drawMode = false;
   renderEmptyOrEditor();
@@ -1072,7 +1086,7 @@ function paintMarkings(svgEl, orientation){
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.setAttribute('data-markings', '1');
   g.innerHTML = MARKINGS_INNER;
-  if(orientation === 'top') g.setAttribute('transform', 'matrix(1,0,0,-1,0,60)');
+  if(orientation === 'top') g.setAttribute('transform', 'matrix(1,0,0,-1,0,70)');
   svgEl.appendChild(g);
 }
 
@@ -1207,6 +1221,24 @@ function clearArrows(){
   markDirty();
   renderArrows();
 }
+const ARROW_COLORS = { white: '#ffffff', yellow: '#ffd23f', red: '#ff5c5c', green: '#3ddc84' };
+// The pitch view is cropped to a landscape window: viewBox "0 10 68 50" instead of
+// "0 0 68 60" — i.e. we only show the region from 10 to 60 pitch-units deep, so a
+// 0-100% token/arrow y-coordinate maps to 10 + y/100*50, not y/100*60.
+function toViewX(xPct){ return xPct / 100 * 68; }
+function toViewY(yPct){ return 10 + (yPct / 100) * 50; }
+
+function arrowPathD(x1, y1, x2, y2, curved){
+  if(!curved) return null;
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const bulge = len * 0.22;
+  const mx = (x1 + x2) / 2 + nx * bulge;
+  const my = (y1 + y2) / 2 + ny * bulge;
+  return `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+}
+
 function removeArrow(arrowId){
   if(!state.board || !isEditor()) return;
   state.board.arrows = state.board.arrows.filter(a => a.id !== arrowId);
@@ -1216,17 +1248,21 @@ function removeArrow(arrowId){
 
 function renderArrows(){
   const svg = $('#spArrows');
-  svg.querySelectorAll('line[data-arrow]').forEach(l => l.remove());
+  svg.querySelectorAll('[data-arrow]').forEach(l => l.remove());
   (state.board.arrows || []).forEach(a => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('data-arrow', a.id);
-    line.setAttribute('x1', a.x1 / 100 * 68);
-    line.setAttribute('y1', a.y1 / 100 * 60);
-    line.setAttribute('x2', a.x2 / 100 * 68);
-    line.setAttribute('y2', a.y2 / 100 * 60);
-    line.setAttribute('class', 'sp-arrow-line ' + (a.style === 'dashed' ? 'sp-arrow-dashed' : 'sp-arrow-solid'));
-    line.setAttribute('marker-end', 'url(#arrowhead)');
-    svg.appendChild(line);
+    const x1 = toViewX(a.x1), y1 = toViewY(a.y1), x2 = toViewX(a.x2), y2 = toViewY(a.y2);
+    const curved = a.shape === 'curved';
+    const el = document.createElementNS('http://www.w3.org/2000/svg', curved ? 'path' : 'line');
+    el.setAttribute('data-arrow', a.id);
+    if(curved) el.setAttribute('d', arrowPathD(x1, y1, x2, y2, true));
+    else{ el.setAttribute('x1', x1); el.setAttribute('y1', y1); el.setAttribute('x2', x2); el.setAttribute('y2', y2); }
+    el.setAttribute('class', 'sp-arrow-line');
+    const hex = ARROW_COLORS[a.color] || ARROW_COLORS.white;
+    el.setAttribute('stroke', hex);
+    el.setAttribute('color', hex);
+    if(a.dash) el.setAttribute('stroke-dasharray', '1.6,1.3');
+    el.setAttribute('marker-end', 'url(#arrowhead)');
+    svg.appendChild(el);
   });
   renderArrowList();
 }
@@ -1236,9 +1272,10 @@ function renderArrowList(){
   const arrows = state.board.arrows || [];
   if(!arrows.length){ el.innerHTML = ''; return; }
   const editable = isEditor();
+  const colorName = c => c ? c.charAt(0).toUpperCase() + c.slice(1) : 'White';
   el.innerHTML = arrows.map((a, i) => `
     <div class="sp-arrow-item">
-      <span>${a.style === 'dashed' ? 'Pass' : 'Run'} arrow ${i + 1}</span>
+      <span>${colorName(a.color)} ${a.shape === 'curved' ? 'curved' : 'straight'} ${a.dash ? 'dashed' : 'solid'} arrow ${i + 1}</span>
       ${editable ? `<button data-del-arrow="${a.id}">&times;</button>` : ''}
     </div>
   `).join('');
@@ -1273,12 +1310,17 @@ function bindPitchInteractions(){
     const svg = $('#spArrows');
     const temp = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     temp.setAttribute('id', 'tempArrow');
-    temp.setAttribute('x1', drawStart.x / 100 * 68);
-    temp.setAttribute('y1', drawStart.y / 100 * 60);
-    temp.setAttribute('x2', drawStart.x / 100 * 68);
-    temp.setAttribute('y2', drawStart.y / 100 * 60);
-    const styleSel = $('#arrowStyleSelect').value;
-    temp.setAttribute('class', 'sp-arrow-line ' + (styleSel === 'dashed' ? 'sp-arrow-dashed' : 'sp-arrow-solid'));
+    temp.setAttribute('x1', toViewX(drawStart.x));
+    temp.setAttribute('y1', toViewY(drawStart.y));
+    temp.setAttribute('x2', toViewX(drawStart.x));
+    temp.setAttribute('y2', toViewY(drawStart.y));
+    const colorSel = $('#arrowColorSelect').value;
+    const patternSel = $('#arrowPatternSelect').value;
+    const hex = ARROW_COLORS[colorSel] || ARROW_COLORS.white;
+    temp.setAttribute('class', 'sp-arrow-line');
+    temp.setAttribute('stroke', hex);
+    temp.setAttribute('color', hex);
+    if(patternSel === 'dashed') temp.setAttribute('stroke-dasharray', '1.6,1.3');
     temp.setAttribute('marker-end', 'url(#arrowhead)');
     svg.appendChild(temp);
 
@@ -1286,8 +1328,8 @@ function bindPitchInteractions(){
       const r2 = pitch.getBoundingClientRect();
       const x2 = ((ev.clientX - r2.left) / r2.width) * 100;
       const y2 = ((ev.clientY - r2.top) / r2.height) * 100;
-      temp.setAttribute('x2', x2 / 100 * 68);
-      temp.setAttribute('y2', y2 / 100 * 60);
+      temp.setAttribute('x2', toViewX(x2));
+      temp.setAttribute('y2', toViewY(y2));
     };
     const up = (ev) => {
       pitch.removeEventListener('pointermove', move);
@@ -1298,7 +1340,12 @@ function bindPitchInteractions(){
       temp.remove();
       const dist = Math.hypot(x2 - drawStart.x, y2 - drawStart.y);
       if(dist > 3){
-        state.board.arrows.push({ id: uid(), x1: drawStart.x, y1: drawStart.y, x2, y2, style: styleSel });
+        state.board.arrows.push({
+          id: uid(), x1: drawStart.x, y1: drawStart.y, x2, y2,
+          shape: $('#arrowShapeSelect').value,
+          dash: $('#arrowPatternSelect').value === 'dashed',
+          color: $('#arrowColorSelect').value,
+        });
         markDirty();
         renderArrows();
       }
@@ -1320,12 +1367,10 @@ function exportPitchPanel(board, pitchWidthPx){
     arrows: $('#optArrows').checked,
   };
 
-  const pitchHeightPx = pitchWidthPx * (60 / 68);
+  const pitchHeightPx = pitchWidthPx * (50 / 68);
   const tokenSizePx = Math.round(pitchWidthPx * 0.072);   // smaller player circles/photos
   const labelFontPx = Math.max(12, Math.round(pitchWidthPx * 0.019)); // bigger, more legible names
   const numFontPx = Math.round(tokenSizePx * 0.42);
-  const strokeW = (pitchWidthPx * 0.0035).toFixed(2);      // thinner pitch lines, scales with size
-  const arrowStrokeW = (pitchWidthPx * 0.0028).toFixed(2); // thinner arrows
 
   const tokensHtml = (board.tokens || []).map(t => {
     const p = findPlayer(t.player_id);
@@ -1344,23 +1389,27 @@ function exportPitchPanel(board, pitchWidthPx){
   }).join('');
 
   const arrowsSvg = opts.arrows ? `
-    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 68 60">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 10 68 50">
       <defs><marker id="exArrowhead-${board.id || 'x'}" markerWidth="1.8" markerHeight="1.8" refX="1.5" refY="0.9" orient="auto">
         <path d="M0,0 L1.8,0.9 L0,1.8 z" fill="currentColor"></path>
       </marker></defs>
-      <g style="color:var(--ex-line);">
-        ${(board.arrows || []).map(a => `
-          <line x1="${a.x1/100*68}" y1="${a.y1/100*60}" x2="${a.x2/100*68}" y2="${a.y2/100*60}"
-            stroke="currentColor" stroke-width="0.22" stroke-linecap="round"
-            ${a.style === 'dashed' ? 'stroke-dasharray="1.5,1.2"' : ''}
-            marker-end="url(#exArrowhead-${board.id || 'x'})"></line>
-        `).join('')}
-      </g>
+      ${(board.arrows || []).map(a => {
+        const x1 = toViewX(a.x1), y1 = toViewY(a.y1), x2 = toViewX(a.x2), y2 = toViewY(a.y2);
+        const hex = ARROW_COLORS[a.color] || ARROW_COLORS.white;
+        const curved = a.shape === 'curved';
+        const shapeAttrs = curved
+          ? `d="${arrowPathD(x1, y1, x2, y2, true)}"`
+          : `x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"`;
+        return `<${curved ? 'path' : 'line'} ${shapeAttrs}
+            fill="none" stroke="${hex}" color="${hex}" stroke-width="0.22" stroke-linecap="round"
+            ${a.dash ? 'stroke-dasharray="1.5,1.2"' : ''}
+            marker-end="url(#exArrowhead-${board.id || 'x'})"></${curved ? 'path' : 'line'}>`;
+      }).join('')}
     </svg>` : '';
 
   const markingsSvg = `
-    <svg style="position:absolute;inset:0;width:100%;height:100%;color:var(--ex-pitch-line);" viewBox="0 0 68 60">
-      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,60)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.4;">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;color:var(--ex-pitch-line);" viewBox="0 10 68 50">
+      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,70)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.4;">
         ${MARKINGS_INNER}
       </g>
     </svg>`;
