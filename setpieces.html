@@ -147,7 +147,7 @@
     background:var(--surface-2);border:1px solid var(--border);border-radius:10px;}
 
   .sp-pitch-wrap{max-width:640px;margin:0 auto;}
-  .sp-pitch{position:relative;width:100%;aspect-ratio:68/50;border-radius:12px;overflow:hidden;
+  .sp-pitch{position:relative;width:100%;aspect-ratio:68/38;border-radius:12px;overflow:hidden;
     border:2px solid rgba(255,255,255,.25);
     background:repeating-linear-gradient(to bottom,#1d5c34 0 11%,#1a5430 11% 22%);
     touch-action:none;}
@@ -173,6 +173,21 @@
     color:#fff;font-size:14px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);z-index:7;}
   .sp-token-label{position:absolute;transform:translate(-50%,4px);top:100%;left:50%;font-size:9px;font-weight:700;color:#fff;
     background:rgba(0,0,0,.6);padding:1px 5px;border-radius:5px;white-space:nowrap;pointer-events:none;}
+
+  .sp-markers{position:absolute;inset:0;}
+  .sp-marker{position:absolute;transform:translate(-50%,-50%);cursor:grab;touch-action:none;z-index:6;}
+  .sp-marker:active{cursor:grabbing;z-index:7;}
+  .sp-marker-image{width:11%;aspect-ratio:1;min-width:34px;max-width:56px;border-radius:9px;background:#fff;
+    border:2px solid var(--danger);overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.35);display:flex;
+    align-items:center;justify-content:center;}
+  .sp-marker-image img{width:100%;height:100%;object-fit:contain;}
+  .sp-marker-text{background:rgba(224,85,79,.92);color:#fff;font-size:11.5px;font-weight:700;padding:5px 10px;
+    border-radius:7px;white-space:pre-wrap;max-width:180px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.35);}
+  .sp-marker-label{position:absolute;transform:translate(-50%,4px);top:100%;left:50%;font-size:9px;font-weight:700;
+    color:#fff;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:5px;white-space:nowrap;pointer-events:none;}
+  .sp-marker .mk-remove{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;background:var(--danger);
+    color:#fff;font-size:14px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--bg);z-index:7;}
 
   .sp-roster-card{position:sticky;top:78px;}
   .sp-roster-list{max-height:260px;overflow-y:auto;margin-bottom:4px;}
@@ -202,8 +217,9 @@
   .sp-board-row .bp{font-size:10px;color:var(--muted);}
 
   .sp-arrow-list{margin-top:10px;}
-  .sp-side-lists{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;}
+  .sp-side-lists{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px;}
   .sp-list-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;}
+  @media(max-width:820px){.sp-side-lists{grid-template-columns:1fr 1fr;}}
   @media(max-width:520px){.sp-side-lists{grid-template-columns:1fr;}}
   .sp-arrow-item{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);
     padding:5px 2px;border-bottom:1px solid var(--border);}
@@ -281,6 +297,14 @@
   .ex-token img{width:100%;height:100%;object-fit:cover;display:block;}
   .ex-token-label{margin-top:4px;font-weight:800;
     color:#fff;background:rgba(0,0,0,.65);padding:2px 7px;border-radius:5px;white-space:nowrap;}
+  .ex-marker-wrap{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;}
+  .ex-marker-image{border-radius:9px;background:#fff;border:2.5px solid #e0554f;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.4);flex-shrink:0;}
+  .ex-marker-image img{width:100%;height:100%;object-fit:contain;display:block;}
+  .ex-marker-text{background:rgba(224,85,79,.92);color:#fff;font-weight:700;border-radius:8px;
+    white-space:pre-wrap;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+  .ex-marker-label{margin-top:4px;font-weight:800;color:#fff;background:rgba(0,0,0,.65);padding:2px 7px;
+    border-radius:5px;white-space:nowrap;}
   .ex-footer-tag{margin-top:14px;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ex-muted2);}
 
   @media print{
@@ -357,6 +381,10 @@
                 <option value="straight">Straight</option>
                 <option value="curved">Curved</option>
               </select>
+              <select class="select" id="arrowCurveSideSelect" title="Only applies to curved arrows">
+                <option value="right">Curve right</option>
+                <option value="left">Curve left</option>
+              </select>
               <select class="select" id="arrowPatternSelect">
                 <option value="solid">Solid (run)</option>
                 <option value="dashed">Dashed (pass)</option>
@@ -373,10 +401,17 @@
               <button class="btn btn-ghost btn-sm" id="clearTokensBtn">Clear players</button>
             </div>
 
+            <div class="sp-draw-toolbar">
+              <button class="btn btn-ghost btn-sm" id="addImageMarkerBtn">&#128247; Add image (e.g. opponent logo)</button>
+              <button class="btn btn-ghost btn-sm" id="addTextMarkerBtn">&#128221; Add text</button>
+              <div class="toolbar-spacer"></div>
+              <button class="btn btn-ghost btn-sm" id="clearMarkersBtn">Clear extras</button>
+            </div>
+
             <div class="sp-pitch-wrap">
               <div class="sp-pitch" id="spPitch">
-                <svg class="sp-markings" id="spMarkings" viewBox="0 10 68 50"></svg>
-                <svg class="sp-arrows" id="spArrows" viewBox="0 10 68 50">
+                <svg class="sp-markings" id="spMarkings" viewBox="0 22 68 38"></svg>
+                <svg class="sp-arrows" id="spArrows" viewBox="0 22 68 38">
                   <defs>
                     <marker id="arrowhead" markerWidth="2" markerHeight="2" refX="1.6" refY="1" orient="auto">
                       <path d="M0,0 L2,1 L0,2 z" fill="currentColor"></path>
@@ -384,9 +419,10 @@
                   </defs>
                 </svg>
                 <div class="sp-tokens" id="spTokens"></div>
+                <div class="sp-markers" id="spMarkers"></div>
               </div>
             </div>
-            <p class="hint">Drag players from the roster onto the pitch, or tap the + button to drop one in the middle. Drag a token to reposition it. Turn on &ldquo;Draw arrow&rdquo; then click-drag on the grass to add a run or pass line.</p>
+            <p class="hint">Drag players from the roster onto the pitch, or tap the + button to drop one in the middle. Drag a token to reposition it. Turn on &ldquo;Draw arrow&rdquo; then click-drag on the grass to add a run or pass line. Use &ldquo;Add image&rdquo; for an opponent logo or player photo, or &ldquo;Add text&rdquo; for a note or zone label — both can be dragged anywhere on the pitch.</p>
 
             <div class="sp-side-lists">
               <div>
@@ -396,6 +432,10 @@
               <div>
                 <div class="sp-list-heading">Arrows</div>
                 <div class="sp-arrow-list" id="arrowList"></div>
+              </div>
+              <div>
+                <div class="sp-list-heading">Extras (images / text)</div>
+                <div class="sp-arrow-list" id="markerListPanel"></div>
               </div>
             </div>
 
@@ -531,6 +571,33 @@
   </div>
 </div>
 
+<!-- MARKER MODAL (image or text placed anywhere on the pitch) -->
+<div class="modal-overlay" id="markerModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="markerModalTitle">Add image</h3><button class="modal-close" data-close="markerModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="field" id="mkImageField">
+        <label>Image URL</label>
+        <input type="text" id="mkImageUrl" placeholder="https://…/opponent-logo.png">
+        <p class="hint" style="margin:2px 0 0;">An opponent logo, opponent player photo, or any other image URL.</p>
+      </div>
+      <div class="field" id="mkTextField" style="display:none;">
+        <label>Text</label>
+        <textarea id="mkText" rows="2" placeholder="e.g. Zone A, or a short instruction"></textarea>
+      </div>
+      <div class="field" id="mkLabelField">
+        <label>Caption (optional)</label>
+        <input type="text" id="mkLabel" placeholder="e.g. Opponent GK">
+      </div>
+      <div class="form-error" id="markerModalError" style="display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close="markerModal">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="markerModalSubmit">Add to pitch</button>
+    </div>
+  </div>
+</div>
+
 <div id="exportSheet"></div>
 <div class="toast" id="toast"></div>
 
@@ -604,7 +671,7 @@ function emptyBoard(overrides){
   // not-null constraint.
   return Object.assign({
     name: 'Untitled variant', category: 'corner', phase: 'attacking',
-    orientation: 'bottom', notes: '', tokens: [], arrows: [],
+    orientation: 'bottom', notes: '', tokens: [], arrows: [], markers: [],
   }, overrides || {});
 }
 let _autosaveTimer = null;
@@ -746,6 +813,11 @@ function bindStaticEvents(){
   $('#undoArrowBtn').addEventListener('click', undoArrow);
   $('#clearArrowsBtn').addEventListener('click', clearArrows);
   $('#clearTokensBtn').addEventListener('click', clearTokens);
+
+  $('#addImageMarkerBtn').addEventListener('click', () => openMarkerModal('image'));
+  $('#addTextMarkerBtn').addEventListener('click', () => openMarkerModal('text'));
+  $('#clearMarkersBtn').addEventListener('click', clearMarkers);
+  $('#markerModalSubmit').addEventListener('click', submitMarkerModal);
 
   $('#boardNotes').addEventListener('input', (e) => {
     if(!state.board) return;
@@ -930,9 +1002,11 @@ function applyBoardToEditor(board){
   state.board.arrows = (state.board.arrows || []).map(a => ({
     id: a.id, x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2,
     shape: a.shape || 'straight',
+    curveSide: a.curveSide || 'right',
     dash: a.dash !== undefined ? a.dash : (a.style === 'dashed'),
     color: a.color || (a.style === 'dashed' ? 'yellow' : 'white'),
   }));
+  state.board.markers = state.board.markers || [];
   clearDirty();
   state.drawMode = false;
   renderEmptyOrEditor();
@@ -961,7 +1035,8 @@ function renderPitchChrome(){
   $('#orientTopBtn').classList.toggle('active', state.board.orientation === 'top');
   $('#orientBottomBtn').classList.toggle('active', state.board.orientation === 'bottom');
   ['newBoardBtn','duplicateBoardBtn','editBoardBtn','deleteBoardBtn','saveBoardBtn','drawArrowBtn',
-   'undoArrowBtn','clearArrowsBtn','clearTokensBtn','orientTopBtn','orientBottomBtn','boardNotes'].forEach(id => {
+   'undoArrowBtn','clearArrowsBtn','clearTokensBtn','orientTopBtn','orientBottomBtn','boardNotes',
+   'addImageMarkerBtn','addTextMarkerBtn','clearMarkersBtn'].forEach(id => {
     $('#' + id).disabled = !editable;
   });
 }
@@ -1028,6 +1103,7 @@ async function duplicateBoard(){
     notes: state.board.notes,
     tokens: state.board.tokens,
     arrows: state.board.arrows,
+    markers: state.board.markers,
   });
   const { data, error } = await sb.from('set_piece_boards').insert(clone).select().single();
   if(error){ toast(error.message, true); return; }
@@ -1061,6 +1137,7 @@ async function saveBoard(silent){
     notes: state.board.notes,
     tokens: state.board.tokens,
     arrows: state.board.arrows,
+    markers: state.board.markers,
   };
   const { error } = await sb.from('set_piece_boards').update(payload).eq('id', state.board.id);
   if(error){ if(!silent) toast(error.message, true); return; }
@@ -1086,7 +1163,7 @@ function paintMarkings(svgEl, orientation){
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.setAttribute('data-markings', '1');
   g.innerHTML = MARKINGS_INNER;
-  if(orientation === 'top') g.setAttribute('transform', 'matrix(1,0,0,-1,0,70)');
+  if(orientation === 'top') g.setAttribute('transform', 'matrix(1,0,0,-1,0,82)');
   svgEl.appendChild(g);
 }
 
@@ -1095,6 +1172,7 @@ function renderPitch(){
   paintMarkings($('#spMarkings'), state.board.orientation);
   renderTokens();
   renderArrows();
+  renderMarkers();
 }
 
 /* ======================================================================
@@ -1226,13 +1304,14 @@ const ARROW_COLORS = { white: '#ffffff', yellow: '#ffd23f', red: '#ff5c5c', gree
 // "0 0 68 60" — i.e. we only show the region from 10 to 60 pitch-units deep, so a
 // 0-100% token/arrow y-coordinate maps to 10 + y/100*50, not y/100*60.
 function toViewX(xPct){ return xPct / 100 * 68; }
-function toViewY(yPct){ return 10 + (yPct / 100) * 50; }
+function toViewY(yPct){ return 22 + (yPct / 100) * 38; }
 
-function arrowPathD(x1, y1, x2, y2, curved){
+function arrowPathD(x1, y1, x2, y2, curved, side){
   if(!curved) return null;
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len, ny = dx / len;
+  const dir = side === 'left' ? -1 : 1;
+  const nx = (-dy / len) * dir, ny = (dx / len) * dir;
   const bulge = len * 0.22;
   const mx = (x1 + x2) / 2 + nx * bulge;
   const my = (y1 + y2) / 2 + ny * bulge;
@@ -1254,7 +1333,7 @@ function renderArrows(){
     const curved = a.shape === 'curved';
     const el = document.createElementNS('http://www.w3.org/2000/svg', curved ? 'path' : 'line');
     el.setAttribute('data-arrow', a.id);
-    if(curved) el.setAttribute('d', arrowPathD(x1, y1, x2, y2, true));
+    if(curved) el.setAttribute('d', arrowPathD(x1, y1, x2, y2, true, a.curveSide));
     else{ el.setAttribute('x1', x1); el.setAttribute('y1', y1); el.setAttribute('x2', x2); el.setAttribute('y2', y2); }
     el.setAttribute('class', 'sp-arrow-line');
     const hex = ARROW_COLORS[a.color] || ARROW_COLORS.white;
@@ -1343,6 +1422,7 @@ function bindPitchInteractions(){
         state.board.arrows.push({
           id: uid(), x1: drawStart.x, y1: drawStart.y, x2, y2,
           shape: $('#arrowShapeSelect').value,
+          curveSide: $('#arrowCurveSideSelect').value,
           dash: $('#arrowPatternSelect').value === 'dashed',
           color: $('#arrowColorSelect').value,
         });
@@ -1357,6 +1437,132 @@ function bindPitchInteractions(){
 }
 
 /* ======================================================================
+   12b) MARKERS (opponent image, free text — placed anywhere on the pitch)
+   ====================================================================== */
+let _markerModalType = 'image';
+
+function openMarkerModal(type){
+  if(!state.board || !isEditor()) return;
+  _markerModalType = type;
+  $('#markerModalTitle').textContent = type === 'image' ? 'Add image' : 'Add text';
+  $('#mkImageField').style.display = type === 'image' ? 'flex' : 'none';
+  $('#mkTextField').style.display = type === 'text' ? 'flex' : 'none';
+  $('#mkImageUrl').value = '';
+  $('#mkText').value = '';
+  $('#mkLabel').value = '';
+  $('#markerModalError').style.display = 'none';
+  openModal('markerModal');
+}
+
+function submitMarkerModal(){
+  const errEl = $('#markerModalError');
+  errEl.style.display = 'none';
+  const label = $('#mkLabel').value.trim();
+
+  if(_markerModalType === 'image'){
+    const url = $('#mkImageUrl').value.trim();
+    if(!url){ errEl.textContent = 'Please paste an image URL.'; errEl.style.display = 'block'; return; }
+    addMarker({ type: 'image', imageUrl: url, label });
+  }else{
+    const text = $('#mkText').value.trim();
+    if(!text){ errEl.textContent = 'Please enter some text.'; errEl.style.display = 'block'; return; }
+    addMarker({ type: 'text', text, label });
+  }
+  closeModal('markerModal');
+}
+
+function addMarker(fields){
+  if(!state.board || !isEditor()) return;
+  state.board.markers.push(Object.assign({ id: uid(), x: 50, y: 50 }, fields));
+  markDirty();
+  renderMarkers();
+}
+function removeMarker(markerId){
+  if(!state.board || !isEditor()) return;
+  state.board.markers = state.board.markers.filter(m => m.id !== markerId);
+  markDirty();
+  renderMarkers();
+}
+function clearMarkers(){
+  if(!state.board || !isEditor() || !state.board.markers.length) return;
+  state.board.markers = [];
+  markDirty();
+  renderMarkers();
+}
+
+function renderMarkers(){
+  const wrap = $('#spMarkers');
+  wrap.innerHTML = '';
+  const editable = isEditor();
+  (state.board.markers || []).forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'sp-marker';
+    el.dataset.marker = m.id;
+    el.style.left = m.x + '%';
+    el.style.top = m.y + '%';
+    const inner = m.type === 'image'
+      ? `<div class="sp-marker-image"><img src="${m.imageUrl}" alt=""></div>`
+      : `<div class="sp-marker-text">${escapeHtml(m.text || '')}</div>`;
+    el.innerHTML = inner + (m.label ? `<div class="sp-marker-label">${escapeHtml(m.label)}</div>` : '');
+    if(editable) el.insertAdjacentHTML('beforeend', `<button class="mk-remove" data-mk-remove="${m.id}">&times;</button>`);
+    wrap.appendChild(el);
+  });
+
+  renderMarkerListPanel();
+
+  if(!editable) return;
+  wrap.querySelectorAll('[data-mk-remove]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeMarker(btn.dataset.mkRemove); });
+  });
+  wrap.querySelectorAll('.sp-marker').forEach(el => bindMarkerDrag(el));
+}
+
+function renderMarkerListPanel(){
+  const el = $('#markerListPanel');
+  const markers = state.board.markers || [];
+  if(!markers.length){ el.innerHTML = '<p class="hint" style="margin:0;">No images or text added yet.</p>'; return; }
+  const editable = isEditor();
+  el.innerHTML = markers.map(m => {
+    const desc = m.type === 'image' ? (m.label || 'Image') : (m.text.length > 24 ? m.text.slice(0, 24) + '…' : m.text);
+    return `
+    <div class="sp-arrow-item">
+      <span>${m.type === 'image' ? '🖼' : '📝'} ${escapeHtml(desc)}</span>
+      ${editable ? `<button data-del-marker="${m.id}">&times;</button>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-del-marker]').forEach(btn => {
+    btn.addEventListener('click', () => removeMarker(btn.dataset.delMarker));
+  });
+}
+
+function bindMarkerDrag(el){
+  el.addEventListener('pointerdown', (e) => {
+    if(e.target.closest('.mk-remove') || !isEditor()) return;
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    const pitchRect = $('#spPitch').getBoundingClientRect();
+    const move = (ev) => {
+      let x = ((ev.clientX - pitchRect.left) / pitchRect.width) * 100;
+      let y = ((ev.clientY - pitchRect.top) / pitchRect.height) * 100;
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+      const marker = state.board.markers.find(m => m.id === el.dataset.marker);
+      if(marker){ marker.x = x; marker.y = y; }
+    };
+    const up = (ev) => {
+      el.releasePointerCapture(e.pointerId);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      markDirty();
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+  });
+}
+
+/* ======================================================================
    13) EXPORT
    ====================================================================== */
 function exportPitchPanel(board, pitchWidthPx){
@@ -1367,9 +1573,9 @@ function exportPitchPanel(board, pitchWidthPx){
     arrows: $('#optArrows').checked,
   };
 
-  const pitchHeightPx = pitchWidthPx * (50 / 68);
-  const tokenSizePx = Math.round(pitchWidthPx * 0.056);   // smaller player circles/photos
-  const labelFontPx = Math.max(10, Math.round(pitchWidthPx * 0.014)); // smaller name labels
+  const pitchHeightPx = pitchWidthPx * (38 / 68);
+  const tokenSizePx = Math.round(pitchWidthPx * 0.044);   // smaller player circles/photos
+  const labelFontPx = Math.max(9, Math.round(pitchWidthPx * 0.0105)); // smaller name labels
   const numFontPx = Math.round(tokenSizePx * 0.42);
 
   const tokensHtml = (board.tokens || []).map(t => {
@@ -1389,7 +1595,7 @@ function exportPitchPanel(board, pitchWidthPx){
   }).join('');
 
   const arrowsSvg = opts.arrows ? `
-    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 10 68 50">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 22 68 38">
       <defs><marker id="exArrowhead-${board.id || 'x'}" markerWidth="1.8" markerHeight="1.8" refX="1.5" refY="0.9" orient="auto">
         <path d="M0,0 L1.8,0.9 L0,1.8 z" fill="currentColor"></path>
       </marker></defs>
@@ -1398,7 +1604,7 @@ function exportPitchPanel(board, pitchWidthPx){
         const hex = ARROW_COLORS[a.color] || ARROW_COLORS.white;
         const curved = a.shape === 'curved';
         const shapeAttrs = curved
-          ? `d="${arrowPathD(x1, y1, x2, y2, true)}"`
+          ? `d="${arrowPathD(x1, y1, x2, y2, true, a.curveSide)}"`
           : `x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"`;
         return `<${curved ? 'path' : 'line'} ${shapeAttrs}
             fill="none" stroke="${hex}" color="${hex}" stroke-width="0.22" stroke-linecap="round"
@@ -1408,11 +1614,25 @@ function exportPitchPanel(board, pitchWidthPx){
     </svg>` : '';
 
   const markingsSvg = `
-    <svg style="position:absolute;inset:0;width:100%;height:100%;color:var(--ex-pitch-line);" viewBox="0 10 68 50">
-      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,70)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.4;">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;color:var(--ex-pitch-line);" viewBox="0 22 68 38">
+      <g ${board.orientation === 'top' ? 'transform="matrix(1,0,0,-1,0,82)"' : ''} fill="none" stroke="currentColor" style="stroke-width:.4;">
         ${MARKINGS_INNER}
       </g>
     </svg>`;
+
+  const markersHtml = (board.markers || []).map(m => {
+    const label = m.label ? `<div class="ex-marker-label" style="font-size:${labelFontPx}px;">${escapeHtml(m.label)}</div>` : '';
+    if(m.type === 'image'){
+      return `<div class="ex-marker-wrap" style="left:${m.x}%;top:${m.y}%;">
+        <div class="ex-marker-image" style="width:${tokenSizePx}px;height:${tokenSizePx}px;"><img src="${m.imageUrl}" crossorigin="anonymous" alt=""></div>
+        ${label}
+      </div>`;
+    }
+    return `<div class="ex-marker-wrap" style="left:${m.x}%;top:${m.y}%;">
+      <div class="ex-marker-text" style="font-size:${labelFontPx}px;max-width:${Math.round(pitchWidthPx*0.22)}px;padding:5px 9px;">${escapeHtml(m.text || '')}</div>
+      ${label}
+    </div>`;
+  }).join('');
 
   return `
     <div class="ex-panel">
@@ -1425,6 +1645,7 @@ function exportPitchPanel(board, pitchWidthPx){
         ${markingsSvg}
         ${arrowsSvg}
         ${tokensHtml}
+        ${markersHtml}
       </div>
     </div>
   `;
