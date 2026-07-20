@@ -1368,8 +1368,8 @@ function exportPitchPanel(board, pitchWidthPx){
   };
 
   const pitchHeightPx = pitchWidthPx * (50 / 68);
-  const tokenSizePx = Math.round(pitchWidthPx * 0.072);   // smaller player circles/photos
-  const labelFontPx = Math.max(12, Math.round(pitchWidthPx * 0.019)); // bigger, more legible names
+  const tokenSizePx = Math.round(pitchWidthPx * 0.056);   // smaller player circles/photos
+  const labelFontPx = Math.max(10, Math.round(pitchWidthPx * 0.014)); // smaller name labels
   const numFontPx = Math.round(tokenSizePx * 0.42);
 
   const tokensHtml = (board.tokens || []).map(t => {
