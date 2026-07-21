@@ -1574,8 +1574,8 @@ function exportPitchPanel(board, pitchWidthPx){
   };
 
   const pitchHeightPx = pitchWidthPx * (38 / 68);
-  const tokenSizePx = Math.round(pitchWidthPx * 0.044);   // smaller player circles/photos
-  const labelFontPx = Math.max(9, Math.round(pitchWidthPx * 0.0105)); // smaller name labels
+  const tokenSizePx = Math.round(pitchWidthPx * 0.034);   // smaller player circles/photos
+  const labelFontPx = Math.max(8, Math.round(pitchWidthPx * 0.0082)); // smaller name labels
   const numFontPx = Math.round(tokenSizePx * 0.42);
 
   const tokensHtml = (board.tokens || []).map(t => {
